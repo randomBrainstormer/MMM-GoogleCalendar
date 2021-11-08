@@ -29,7 +29,7 @@ module.exports = NodeHelper.create({
       }
     }
     if (notification === "ADD_CALENDAR") {
-      this.createFetcher(
+      this.fetchCalendar(
         payload.calendarID,
         payload.fetchInterval,
         payload.maximumEntries,
