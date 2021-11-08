@@ -1,6 +1,6 @@
 # Module: MMM-GoogleCalendar
 
-This module is a customization from MaigcMirror's default calendar module to display google calendar events. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
+This module is a customization from MaigcMirror's default calendar module to display your Google calendars (including the Google Family calendar). Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
 
 ### Dependencies
 
@@ -37,17 +37,17 @@ var config = {
         ...
         {
             module: 'MMM-GoogleCalendar',
-            header: "My Google Cal",
+            header: "My Google Private Cal",
             position: "top_left",
             config: {
               calendars: [
                 {
                   symbol: "calendar-week",
-                  calendarID: "GoogleCalID"
+                  calendarID: "GoogleCalendarID"
                 },
                 {
                   symbol: "calendar-alt",
-                  calendarID: "YourGoogleCalID"
+                  calendarID: "MyOtherGoogleCalID"
                 },
               ],
               ...
