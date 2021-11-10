@@ -554,6 +554,20 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
+   * Parse google date obj
+   * @param {*} googleDate
+   * @returns timestamp
+   */
+  extractCalendarDate: function (googleDate) {
+    // case is "all day event"
+    if (googleDate.hasOwnProperty("date")) {
+      return moment(googleDate.date).valueOf();
+    }
+
+    return moment(googleDate.dateTime).valueOf();
+  },
+
+  /**
    * Creates the sorted list of all events.
    *
    * @returns {object[]} Array with events.
@@ -573,8 +587,11 @@ Module.register("MMM-GoogleCalendar", {
       const calendar = this.calendarData[calendarID];
       for (const e in calendar) {
         const event = JSON.parse(JSON.stringify(calendar[e])); // clone object
-        event.endDate = moment(event.end.dateTime).valueOf();
-        event.startDate = moment(event.start.dateTime).valueOf();
+
+        // added props
+        event.calendarID = calendarID;
+        event.endDate = this.extractCalendarDate(event.end);
+        event.startDate = this.extractCalendarDate(event.start);
 
         if (event.endDate < now) {
           continue;
