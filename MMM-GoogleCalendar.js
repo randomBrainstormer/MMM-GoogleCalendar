@@ -226,7 +226,7 @@ Module.register("MMM-GoogleCalendar", {
             "color:" + this.colorForCalendar(event.calendarID);
         }
 
-        const symbolClass = this.symbolClassForUrl(event.url);
+        const symbolClass = this.symbolClassForCalendar(event.calendarID);
         symbolWrapper.className = "symbol align-right " + symbolClass;
 
         const symbols = this.symbolsForEvent(event);
@@ -270,7 +270,7 @@ Module.register("MMM-GoogleCalendar", {
         this.config.displayRepeatingCountTitle &&
         event.firstYear !== undefined
       ) {
-        repeatingCountTitle = this.countTitleForUrl(event.url);
+        repeatingCountTitle = this.countTitleForCalendar(event.calendarID);
 
         if (repeatingCountTitle !== "") {
           const thisYear = new Date(parseInt(event.startDate)).getFullYear(),
@@ -315,7 +315,7 @@ Module.register("MMM-GoogleCalendar", {
           this.config.maxTitleLines
         ) + repeatingCountTitle;
 
-      const titleClass = this.titleClassForUrl(event.url);
+      const titleClass = this.titleClassForCalendar(event.calendarID);
 
       if (!this.config.colored) {
         titleWrapper.className = "title bright " + titleClass;
@@ -330,7 +330,8 @@ Module.register("MMM-GoogleCalendar", {
         } else {
           const timeWrapper = document.createElement("td");
           timeWrapper.className =
-            "time light align-left " + this.timeClassForUrl(event.url);
+            "time light align-left " +
+            this.timeClassForCalendar(event.calendarID);
           timeWrapper.style.paddingLeft = "2px";
           timeWrapper.innerHTML = moment(event.startDate).format("LT");
           eventWrapper.appendChild(timeWrapper);
@@ -437,7 +438,8 @@ Module.register("MMM-GoogleCalendar", {
             );
           }
         }
-        timeWrapper.className = "time light " + this.timeClassForUrl(event.url);
+        timeWrapper.className =
+          "time light " + this.timeClassForCalendar(event.calendarID);
         eventWrapper.appendChild(timeWrapper);
       }
 
@@ -719,7 +721,7 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-   * Requests node helper to add calendar url
+   * Requests node helper to add calendar ID
    *
    * @param {string} calendarID string
    * @param {object} calendarConfig The config of the specific calendar
@@ -749,18 +751,18 @@ Module.register("MMM-GoogleCalendar", {
    */
   symbolsForEvent: function (event) {
     let symbols = this.getCalendarPropertyAsArray(
-      event.url,
+      event.calendarID,
       "symbol",
       this.config.defaultSymbol
     );
 
     if (
       event.recurringEvent === true &&
-      this.hasCalendarProperty(event.url, "recurringSymbol")
+      this.hasCalendarProperty(event.calendarID, "recurringSymbol")
     ) {
       symbols = this.mergeUnique(
         this.getCalendarPropertyAsArray(
-          event.url,
+          event.calendarID,
           "recurringSymbol",
           this.config.defaultSymbol
         ),
@@ -770,11 +772,11 @@ Module.register("MMM-GoogleCalendar", {
 
     if (
       event.fullDayEvent === true &&
-      this.hasCalendarProperty(event.url, "fullDaySymbol")
+      this.hasCalendarProperty(event.calendarID, "fullDaySymbol")
     ) {
       symbols = this.mergeUnique(
         this.getCalendarPropertyAsArray(
-          event.url,
+          event.calendarID,
           "fullDaySymbol",
           this.config.defaultSymbol
         ),
@@ -794,43 +796,43 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-   * Retrieves the symbolClass for a specific calendar url.
+   * Retrieves the symbolClass for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The class to be used for the symbols of the calendar
    */
-  symbolClassForUrl: function (url) {
-    return this.getCalendarProperty(url, "symbolClass", "");
+  symbolClassForCalendar: function (calendarID) {
+    return this.getCalendarProperty(calendarID, "symbolClass", "");
   },
 
   /**
-   * Retrieves the titleClass for a specific calendar url.
+   * Retrieves the titleClass for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The class to be used for the title of the calendar
    */
-  titleClassForUrl: function (url) {
-    return this.getCalendarProperty(url, "titleClass", "");
+  titleClassForCalendar: function (calendarID) {
+    return this.getCalendarProperty(calendarID, "titleClass", "");
   },
 
   /**
-   * Retrieves the timeClass for a specific calendar url.
+   * Retrieves the timeClass for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The class to be used for the time of the calendar
    */
-  timeClassForUrl: function (url) {
-    return this.getCalendarProperty(url, "timeClass", "");
+  timeClassForCalendar: function (calendarID) {
+    return this.getCalendarProperty(calendarID, "timeClass", "");
   },
 
   /**
-   * Retrieves the calendar name for a specific calendar url.
+   * Retrieves the calendar name for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The name of the calendar
    */
-  calendarNameForUrl: function (url) {
-    return this.getCalendarProperty(url, "name", "");
+  calendarNameForCalendar: function (calendarID) {
+    return this.getCalendarProperty(calendarID, "name", "");
   },
 
   /**
@@ -844,21 +846,21 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-   * Retrieves the count title for a specific calendar url.
+   * Retrieves the count title for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The title
    */
-  countTitleForUrl: function (url) {
+  countTitleForCalendar: function (calendarID) {
     return this.getCalendarProperty(
-      url,
+      calendarID,
       "repeatingCountTitle",
       this.config.defaultRepeatingCountTitle
     );
   },
 
   /**
-   * Helper method to retrieve the property for a specific calendar url.
+   * Helper method to retrieve the property for a specific calendar ID.
    *
    * @param {string} calendarID The calendar ID
    * @param {string} property The property to look for
@@ -878,14 +880,14 @@ Module.register("MMM-GoogleCalendar", {
     return defaultValue;
   },
 
-  getCalendarPropertyAsArray: function (url, property, defaultValue) {
-    let p = this.getCalendarProperty(url, property, defaultValue);
+  getCalendarPropertyAsArray: function (calendarID, property, defaultValue) {
+    let p = this.getCalendarProperty(calendarID, property, defaultValue);
     if (!(p instanceof Array)) p = [p];
     return p;
   },
 
-  hasCalendarProperty: function (url, property) {
-    return !!this.getCalendarProperty(url, property, undefined);
+  hasCalendarProperty: function (calendarID, property) {
+    return !!this.getCalendarProperty(calendarID, property, undefined);
   },
 
   /**
@@ -995,7 +997,7 @@ Module.register("MMM-GoogleCalendar", {
 
   /**
    * Broadcasts the events to all other modules for reuse.
-   * The all events available in one array, sorted on startdate.
+   * The all events available in one array, sorted on startDate.
    */
   broadcastEvents: function () {
     const eventList = [];
@@ -1003,9 +1005,9 @@ Module.register("MMM-GoogleCalendar", {
       for (const ev of this.calendarData[calendarID]) {
         const event = Object.assign({}, ev);
         event.symbol = this.symbolsForEvent(event);
-        event.calendarName = this.calendarNameForUrl(calendarID);
+        event.calendarName = this.calendarNameForCalendar(calendarID);
         event.color = this.colorForCalendar(calendarID);
-        delete event.url;
+        delete event.calendarID;
         eventList.push(event);
       }
     }
