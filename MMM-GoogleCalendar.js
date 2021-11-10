@@ -212,7 +212,8 @@ Module.register("MMM-GoogleCalendar", {
       const eventWrapper = document.createElement("tr");
 
       if (this.config.colored && !this.config.coloredSymbolOnly) {
-        eventWrapper.style.cssText = "color:" + this.colorForUrl(event.url);
+        eventWrapper.style.cssText =
+          "color:" + this.colorForCalendar(event.calendarID);
       }
 
       eventWrapper.className = "normal event";
@@ -221,7 +222,8 @@ Module.register("MMM-GoogleCalendar", {
 
       if (this.config.displaySymbol) {
         if (this.config.colored && this.config.coloredSymbolOnly) {
-          symbolWrapper.style.cssText = "color:" + this.colorForUrl(event.url);
+          symbolWrapper.style.cssText =
+            "color:" + this.colorForCalendar(event.calendarID);
         }
 
         const symbolClass = this.symbolClassForUrl(event.url);
@@ -832,13 +834,13 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-   * Retrieves the color for a specific calendar url.
+   * Retrieves the color for a specific calendar ID.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @returns {string} The color
    */
-  colorForUrl: function (url) {
-    return this.getCalendarProperty(url, "color", "#fff");
+  colorForCalendar: function (calendarID) {
+    return this.getCalendarProperty(calendarID, "color", "#fff");
   },
 
   /**
@@ -858,14 +860,17 @@ Module.register("MMM-GoogleCalendar", {
   /**
    * Helper method to retrieve the property for a specific calendar url.
    *
-   * @param {string} url The calendar url
+   * @param {string} calendarID The calendar ID
    * @param {string} property The property to look for
    * @param {string} defaultValue The value if the property is not found
    * @returns {*} The property
    */
-  getCalendarProperty: function (url, property, defaultValue) {
+  getCalendarProperty: function (calendarID, property, defaultValue) {
     for (const calendar of this.config.calendars) {
-      if (calendar.url === url && calendar.hasOwnProperty(property)) {
+      if (
+        calendar.calendarID === calendarID &&
+        calendar.hasOwnProperty(property)
+      ) {
         return calendar[property];
       }
     }
@@ -999,7 +1004,7 @@ Module.register("MMM-GoogleCalendar", {
         const event = Object.assign({}, ev);
         event.symbol = this.symbolsForEvent(event);
         event.calendarName = this.calendarNameForUrl(calendarID);
-        event.color = this.colorForUrl(calendarID);
+        event.color = this.colorForCalendar(calendarID);
         delete event.url;
         eventList.push(event);
       }
