@@ -1,6 +1,6 @@
 # Module: MMM-GoogleCalendar
 
-This module is a customization from MaigcMirror's default calendar module to display your Google calendars (including the Google Family calendar). Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
+This module is a customization from MaigcMirror's default calendar module to display your Google calendars (including the Google Family calendar) without need to make iCals public. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
 
 ### Dependencies
 
@@ -48,10 +48,11 @@ var config = {
                 {
                   symbol: "calendar-alt",
                   calendarID: "MyOtherGoogleCalID"
+                  // other "calendar" options
                 },
               ],
               ...
-                // See below for configuration options
+                // other "configuration" options
             }
         },
         ...
@@ -61,4 +62,5 @@ var config = {
 
 ### Configuration Options
 
-Work in progress. PRs are welcome. Most of the options from the original calendar module are implemented, please check the [MagicMirror² documentation](https://docs.magicmirror.builders/modules/calendar.html).
+Altough this module works with Google calendars only, most of the options from the original calendar module are supported, please check the [MagicMirror² documentation](https://docs.magicmirror.builders/modules/calendar.html). PRs with latest chanes are always welcome.
+ 
