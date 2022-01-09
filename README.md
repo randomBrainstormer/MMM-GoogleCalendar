@@ -22,7 +22,7 @@ Before you can add your calendar you need to setup the Google Calendar API and O
 2. Once you have enabled setup the project and created your OAuth ID client, download the client ID as `json` (look for the download option) and rename it `credentials.json`.
 3. Move `credentials.json` to your MMM-GoogleCalendar directory (MagicMirror/modules/MMM-GoogleCalendar/)
 4. [Enable Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com). Select the same project as in step 1.
-5. Run authenticate.js:<br />`node authenticate.js`.
+5. Run authorize.js:<br />`node authorize.js`.
 6. Follow the instructions and it should print your calendar. Copy the ID of the calendar you want to the config.
 
 ## Using the module
