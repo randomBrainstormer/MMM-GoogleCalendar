@@ -1,6 +1,6 @@
 # Module: MMM-GoogleCalendar
 
-This module is a customization from MaigcMirror's default calendar module to display your Google calendars (including the Google Family calendar) without needing to make calendars public or using iCals. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
+This module is a customization from MagicMirror's default calendar module to display your Google calendars (including the Google Family calendar) without needing to make calendars public or using iCals. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
 
 ### Dependencies
 
@@ -22,8 +22,8 @@ Before you can add your calendar you need to setup the Google Calendar API and O
 2. Once you have enabled setup the project and created your OAuth ID client, download the client ID as `json` (look for the download option) and rename it `credentials.json`.
 3. Move `credentials.json` to your MMM-GoogleCalendar directory (MagicMirror/modules/MMM-GoogleCalendar/)
 4. [Enable Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com). Select the same project as in step 1.
-5. Run authorize.js:<br />`node authorize.js`.
-6. Follow the instructions and it should print your calendar. Copy the ID of the calendar you want to the config.
+5. Run this command from the MMM-GoogleCalendar directory: `node authorize.js` and follow the instructions that will display in the console. 
+6. Follow the instructions shown after you run the command, it should print your calendar. Copy the ID of the calendar you want to the config.
 
 ## Using the module
 
@@ -62,5 +62,23 @@ var config = {
 
 ### Configuration Options
 
-Altough this module works with Google calendars only, most of the options from the original calendar module are supported, please check the [MagicMirror² documentation](https://docs.magicmirror.builders/modules/calendar.html). PRs with latest chanes are always welcome.
+Although this module works with Google calendars only, most of the options from the original calendar module are supported, please check the [MagicMirror² documentation](https://docs.magicmirror.builders/modules/calendar.html). PRs with latest changes are always welcome.
+
+
+## FAQ
+
+**Can this module display `.ICS` calendars or any other format?** <br />
+No, this module will only work with google calendar directly, the reason is that information in google calendars is stored in different format, thus no support for other calendar types. You could, however, use the default calendar module to view ICS.
+
+**Can't seem to get this working, what should I do?**<br />
+Check out the troubleshooting guide below, if you don't find a solution for your problem feel free to [open an issue here](https://github.com/randomBrainstormer/MMM-GoogleCalendar/issues).
+
+
+## Troubleshooting
+
+| Error         | Solution  |
+|---------------|-----------|
+| While installing the module I get `Error: Cannot find module...` | You're probably trying to execute the command in the wrong directory. Use the `ls` command to list the items in your current directory and navigate to where you've installed this module, by default the path is usually `/home/pi/MagicMirror/modules/MMM-GoogleCalendar`  |
+| When installing the module I get `TypeError: Cannot destructure property 'client_secret'..` | The credentials file from Google Cloud is of the wrong type, make sure to create a credential for `TV and unlimited input` |
+| I restarted my raspberry, my calendars suddenly don't show anymore | Most likely the token expired and you have to reauthenticate with Google again. Just run `node authorize.js` as done in step 5.  |
  
