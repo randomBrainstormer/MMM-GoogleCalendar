@@ -4,7 +4,7 @@ This module is a customization from MagicMirror's default calendar module to dis
 
 ### Dependencies
 
-1. The [Google Node.js client library](https://github.com/google/google-api-nodejs-client/): For authentication and Google Calendar API (v3). See Installation for instructions
+1. The [Google Node.js client library](https://github.com/google/google-api-nodejs-client/): This dependenci is required for authenticating to Google and using the Google Calendar API (v3). See Installation for instructions.
 
 ## Installation
 
@@ -29,35 +29,23 @@ Before you can add your calendar you need to setup the Google Calendar API and O
 
 ### MagicMirror² Configuration
 
-To use this module, add the following configuration block to the modules array in the `config/config.js` file:
+To use this module, add the following configuration block to the modules array in the `config/config.js` file, don't forget to replace the "MyGoogleCalendarIDHere" with your actual calendar ID:
 
-```js
-var config = {
-    modules: [
-        ...
-        {
-            module: 'MMM-GoogleCalendar',
-            header: "My Google Private Cal",
-            position: "top_left",
-            config: {
-              calendars: [
-                {
-                  symbol: "calendar-week",
-                  calendarID: "GoogleCalendarID"
-                },
-                {
-                  symbol: "calendar-alt",
-                  calendarID: "MyOtherGoogleCalID"
-                  // other "calendar" options
-                },
-              ],
-              ...
-                // other "configuration" options
-            }
-        },
-        ...
-    ]
-}
+```javascript
+{
+    module: 'MMM-GoogleCalendar',
+    header: "My Google Private Cal",
+    position: "top_left",
+    config: {
+        calendars: [
+            {
+              symbol: "calendar-week",
+              calendarID: "MyGoogleCalendarIDHere"
+            },
+            // add another calendar HERE if needed
+        ],
+    }
+},
 ```
 
 ### Configuration Options
@@ -80,5 +68,6 @@ Check out the troubleshooting guide below, if you don't find a solution for your
 |---------------|-----------|
 | While installing the module I get `Error: Cannot find module...` | You're probably trying to execute the command in the wrong directory. Use the `ls` command to list the items in your current directory and navigate to where you've installed this module, by default the path is usually `/home/pi/MagicMirror/modules/MMM-GoogleCalendar`  |
 | When installing the module I get `TypeError: Cannot destructure property 'client_secret'..` | The credentials file from Google Cloud is of the wrong type, make sure to create a credential for `TV and unlimited input` |
-| I restarted my raspberry, my calendars suddenly don't show anymore | Most likely the token expired and you have to reauthenticate with Google again. Just run `node authorize.js` as done in step 5.  |
+| I restarted my raspberry, my calendars suddenly don't show anymore | Most likely the token expired and you have to reauthenticate with Google again. Just run `node authorize.js` as done in step 5. If this doesn't work, navigate to the MMM-GoogleCalendar directory and delete the file `token.json` and try running `node authorize.js` again. Note: If you're connecting through SSH you can delete the token by using the command `rm -rf token.json`. If the problem persist, try creating a new credential and repeating the authorize process. (You can delete the old one unless you use it for other stuff). |
+|`Error: invalid_grant` | Make sure the email used during the `node authorize.js` step is the same OR has access to the credentials in Google Cloud. If the problem persist, completely delete the current token by navigating to the MMM-GoogleCalendar directory and deleting `token.json`, if you connect to the raspberry through SSH try running `rm -rf token.json` to delete the token, once deleted run node authorize.js again. If this process doesn't work try creating a new credential and repeating the authorize process. (You can delete the old one unless you use it for other stuff). |
  
