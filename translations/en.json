@@ -1,0 +1,3 @@
+{
+  "WRONG_CREDENTIALS_FORMAT": "Wrong Credentials. An error occurred while reading the credentials.json file, please check you're using the correct credential type."
+}

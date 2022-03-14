@@ -53,6 +53,7 @@ Module.register("MMM-GoogleCalendar", {
       "street ": ""
     },
     broadcastEvents: false,
+    excludedEvents: [],
     sliceMultiDayEvents: false,
     nextDaysRelative: false
   },
@@ -71,10 +72,9 @@ Module.register("MMM-GoogleCalendar", {
 
   // Define required translations.
   getTranslations: function () {
-    // The translations for the default modules are defined in the core translation files.
-    // Therefore we can just return false. Otherwise we should have returned a dictionary.
-    // If you're trying to build your own module including translations, check out the documentation.
-    return false;
+    return {
+      en: "translations/en.json"
+    };
   },
 
   // Override start method.
@@ -93,8 +93,15 @@ Module.register("MMM-GoogleCalendar", {
     // indicate no data available yet
     this.loaded = false;
 
-    // check user token is authenticated.
-    this.sendSocketNotification("MODULE_READY");
+    // check if current URL is module's auth url
+    if (location.search.includes(this.name)) {
+      this.sendSocketNotification("MODULE_READY", {
+        queryParams: location.search
+      });
+    } else {
+      // check user token is authenticated.
+      this.sendSocketNotification("MODULE_READY");
+    }
   },
 
   // Override socket notification handler.
@@ -109,6 +116,18 @@ Module.register("MMM-GoogleCalendar", {
       this.loaded = true;
       this.updateDom(this.config.animationSpeed);
       return;
+    }
+
+    if (notification === "AUTH_NEEDED") {
+      this.error = "ERROR_AUTH_NEEDED";
+      if (payload.credentialType === "web") {
+        this.errorUrl = payload.url;
+      }
+      this.updateDom(this.config.animationSpeed);
+      return;
+    } else {
+      // reset error URL
+      this.errorUrl = null;
     }
 
     if (notification === "SERVICE_READY") {
@@ -156,8 +175,14 @@ Module.register("MMM-GoogleCalendar", {
     wrapper.className = this.config.tableClass;
 
     if (this.error) {
-      wrapper.innerHTML = this.error;
-      wrapper.className = this.config.tableClass + " dimmed";
+      // web credentials will have a WEB url
+      if (this.error === "ERROR_AUTH_NEEDED" && this.errorUrl) {
+        wrapper.innerHTML = `Please <a href=${this.errorUrl}>click here</a> to authorize this module.`;
+      } else {
+        // default to generic error
+        wrapper.innerHTML = this.error;
+        wrapper.className = this.config.tableClass + " dimmed";
+      }
       return wrapper;
     }
 
