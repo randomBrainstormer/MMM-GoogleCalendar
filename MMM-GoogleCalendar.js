@@ -737,7 +737,7 @@ Module.register("MMM-GoogleCalendar", {
     for (const evt of eventList) {
       if (
         evt.summary === event.summary &&
-        parseInt(evt.start) === parseInt(event.start)
+        parseInt(evt.startDate) === parseInt(event.startDate)
       ) {
         return true;
       }
