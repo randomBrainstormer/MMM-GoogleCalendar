@@ -359,6 +359,12 @@ Module.register("MMM-GoogleCalendar", {
             this.timeClassForCalendar(event.calendarID);
           timeWrapper.style.paddingLeft = "2px";
           timeWrapper.innerHTML = moment(event.startDate).format("LT");
+
+          // Add endDate to dataheaders if showEnd is enabled
+          if (this.config.showEnd) {
+            timeWrapper.innerHTML += ` - ${this.capFirst(moment(event.endDate, "x").format("LT"))}`;
+          }
+          
           eventWrapper.appendChild(timeWrapper);
           titleWrapper.classList.add("align-right");
         }
