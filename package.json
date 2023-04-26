@@ -1,6 +1,6 @@
 {
   "name": "mmm-googlecalendar",
-  "version": "2.0.0",
+  "version": "1.1.0",
   "displayName": "MMM-GoogleCalendar",
   "description": "Display your Google calendars in MagicMirror (including google's family calendar) without using iCals nor any public calendar. ",
   "main": "MMM-GoogleCalendar.js",
