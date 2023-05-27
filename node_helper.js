@@ -223,14 +223,14 @@ module.exports = NodeHelper.create({
             id: identifier,
             error_type
           });
-          return;
+        } else {
+          const events = res.data.items;
+          Log.info(
+            `${this.name}: ${events.length} events loaded for ${calendarID}`
+          );
+          this.broadcastEvents(events, identifier, calendarID); 
         }
-
-        const events = res.data.items;
-        Log.info(
-          `${this.name}: ${events.length} events loaded for ${calendarID}`
-        );
-        this.broadcastEvents(events, identifier, calendarID);
+        
         this.scheduleNextCalendarFetch(
           calendarID,
           fetchInterval,
