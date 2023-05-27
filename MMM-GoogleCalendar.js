@@ -55,7 +55,8 @@ Module.register("MMM-GoogleCalendar", {
     broadcastEvents: false,
     excludedEvents: [],
     sliceMultiDayEvents: false,
-    nextDaysRelative: false
+    nextDaysRelative: false,
+	broadcastPastEvents: false,
   },
 
   requiresVersion: "2.1.0",
@@ -770,7 +771,8 @@ Module.register("MMM-GoogleCalendar", {
       fetchInterval: this.config.fetchInterval,
       symbolClass: calendarConfig.symbolClass,
       titleClass: calendarConfig.titleClass,
-      timeClass: calendarConfig.timeClass
+      timeClass: calendarConfig.timeClass,
+	  broadcastPastEvents: calendarConfig.broadcastPastEvents || this.config.broadcastPastEvents,
     });
   },
 
