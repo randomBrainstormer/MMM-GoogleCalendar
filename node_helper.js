@@ -184,6 +184,14 @@ module.exports = NodeHelper.create({
     }
   },
 
+  /**
+   * Check for data.error
+   * @param {object} error
+   */
+  checkForHTTPError: function(request) {
+	return request?.response?.data?.error?.toUpperCase();
+  },
+
   startCalendarService: function (auth, _this) {
     _this.calendarService = google.calendar({ version: "v3", auth });
     _this.sendSocketNotification("SERVICE_READY", {});
@@ -206,7 +214,7 @@ module.exports = NodeHelper.create({
     this.calendarService.events.list(
       {
         calendarId: calendarID,
-        timeMin: new Date().toISOString(),
+        timeMax: new Date().toISOString(),
         maxResults: maximumEntries,
         singleEvents: true,
         orderBy: "startTime"
@@ -214,11 +222,16 @@ module.exports = NodeHelper.create({
       (err, res) => {
         if (err) {
           Log.error(
-            "Calendar Error. Could not fetch calendar: ",
+            "MMM-GoogleCalendar Error. Could not fetch calendar: ",
             calendarID,
             err
           );
           let error_type = NodeHelper.checkFetchError(err);
+		  if (error_type === 'MODULE_ERROR_UNSPECIFIED') {
+			  error_type = this.checkForHTTPError(err) || error_type;
+		  }
+
+		  // send error to module
           this.sendSocketNotification("CALENDAR_ERROR", {
             id: identifier,
             error_type
