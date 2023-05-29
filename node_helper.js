@@ -214,7 +214,7 @@ module.exports = NodeHelper.create({
     this.calendarService.events.list(
       {
         calendarId: calendarID,
-        timeMax: new Date().toISOString(),
+        timeMin: new Date().toISOString(),
         maxResults: maximumEntries,
         singleEvents: true,
         orderBy: "startTime"
