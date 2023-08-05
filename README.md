@@ -4,7 +4,7 @@ This module is a customization from MagicMirror's default calendar module to dis
 
 ### Dependencies
 
-1. The [Google Node.js client library](https://github.com/google/google-api-nodejs-client/): This dependency is required for authenticating to Google and using the Google Calendar API (v3). See Installation for instructions.
+1. The [Google Node.js client library](https://github.com/google/google-api-nodejs-client/): This dependency is required for authenticating to Google and using the Google Calendar API (v3). See Installation for instructions
 
 ## Installation
 
@@ -19,14 +19,16 @@ To install the module, use your terminal to:
 Before you can add your calendar you need to setup the Google Calendar API and OAuth2 client from the Google Cloud Platform:
 
 1. Go [here](https://developers.google.com/calendar/api/quickstart/nodejs), and follow the instructions found in the `prerequisites` section to create the Google Cloud project (you could also use an existing project if you wish).
-2. Once you have enabled setup the project and created your OAuth ID client, download the client ID as `json` (look for the download option) and rename it `credentials.json`. NOTE: When creating the OAuth ID client you should see a list of diffrent credential types, this module is currently only supporting `Desktop app`.
+2. Once you have enabled setup the project and created your OAuth ID client, download the client ID as `json` (look for the download option) and rename it `credentials.json`. NOTE: When creating the OAuth ID client you should see a list of diffrent credential types, this module is currently only supporting `Desktop app` and `Web`, being the latter the most recommendable for mirrors without mouse and keyboard. If you select `Web`, you **must** use your private IP from your mirror including the port (e.g. `192.168.0.20:8080`). Don't use `localhost` or any other loopback like `127.0.0.1`.
 3. Move `credentials.json` to your MMM-GoogleCalendar directory (MagicMirror/modules/MMM-GoogleCalendar/)
 4. [Enable Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com). Select the same project as in step 1.
-5. Run this command from the MMM-GoogleCalendar directory: `node authorize.js` and follow the instructions that will display in the console. NOTE: After completing the `authorize.js` script it should print your calendar ID and most recent entries, you can copy the calendar ID to use later in the config file. (If you can't find your ID, check the troubleshooting section for help). If you run the script but don't see anything happening, check the troubleshooting section below, you may need to connect through VNC rather than SSH.
+5. For authorize, you have two options:
+   1. If you've selected `Desktop app` at the step 1, then run this command from the MMM-GoogleCalendar directory: `node authorize.js` and follow the instructions that will display in the console. NOTE: After completing the `authorize.js` script it should print your calendar ID and most recent entries, you can copy the calendar ID to use later in the config file. (If you can't find your ID, check the troubleshooting section for help). If you run the script but don't see anything happening, check the troubleshooting section below, you may need to connect through VNC rather than SSH.
+   2. If you've selected `Web`, then you'll need to scan the QR Code with your phone and open the URL from the same WiFi network. After giving access to your calendar, your phone should open the Magic Mirror interface (Tip, you should temporally give access to your phone to the Magic Mirror by setting `ipWhitelist: []` on `~/MagicMirror/config/config.js`). Generally the calendar ID is your email (e.g. `example@gmail.com`), but if it doesn't work, then you must find it from the Calendar Settings at [Google Calendar](https://calendar.google.com/).
 
 ### Supported OAuth Credentials Type
 
-As mentioned in the second step above, when creating your OAuth client ID you'll have to choose between a different set of options. This module only supports the `Desktop app` credential type. The main difference between credential types is the authentication flow. If you think you need support for a different flow, feel free to open an issue, merge requests are also welcome.
+As mentioned in the second step above, when creating your OAuth client ID you'll have to choose between a different set of options. This module only supports the `Desktop app` and `Web` credential types. The main difference between credential types is the authentication flow. If you think you need support for a different flow, feel free to open an issue, merge requests are also welcome.
 
 ## Using the module
 
