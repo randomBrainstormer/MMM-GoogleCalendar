@@ -35,8 +35,10 @@ module.exports = NodeHelper.create({
       {
         if (err) {
           Log.warn(this.name + ": " + err);
+          payload.qrUrl = false;
+        } else {
+          payload.qrUrl = qrUrl;
         }
-        payload.qrUrl = qrUrl;
         this.sendSocketNotification("AUTH_NEEDED_QR", payload)
       });
     }
