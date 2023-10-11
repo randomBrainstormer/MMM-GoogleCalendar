@@ -1045,13 +1045,10 @@ Module.register("MMM-GoogleCalendar", {
         // Make a broadcasting event to be compatible with the default calendar module.
         event.title = event.summary;
         event.fullDayEvent = (event.start?.date && event.end?.date) ? true : false;
-        if (event.fullDayEvent) {
-          event.startDate = moment(event.start?.date).valueOf();
-          event.endDate = moment(event.end?.date).valueOf();
-        } else {
-          event.startDate = moment(event.start?.dateTime).valueOf();
-          event.endDate = moment(event.end?.dateTime).valueOf();
-        }
+        let startDate = event.start?.date ?? event.start?.dateTime;
+        let endDate = event.end?.date ?? event.end?.dateTime;
+        event.startDate = (startDate) ? moment(startDate).valueOf() : null;
+        event.endDate = (endDate) ? moment(endDate).valueOf() : null;
         eventList.push(event);
       }
     }
