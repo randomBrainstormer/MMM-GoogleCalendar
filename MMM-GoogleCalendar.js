@@ -1041,6 +1041,17 @@ Module.register("MMM-GoogleCalendar", {
         event.calendarName = this.calendarNameForCalendar(calendarID);
         event.color = this.colorForCalendar(calendarID);
         delete event.calendarID;
+
+        // Make a broadcasting event to be compatible with the default calendar module.
+        event.title = event.summary;
+        event.fullDayEvent = (event.start?.date && event.end?.date) ? true : false;
+        if (event.fullDayEvent) {
+          event.startDate = moment(event.start?.date).valueOf();
+          event.endDate = moment(event.end?.date).valueOf();
+        } else {
+          event.startDate = moment(event.start?.dateTime).valueOf();
+          event.endDate = moment(event.end?.dateTime).valueOf();
+        }
         eventList.push(event);
       }
     }
