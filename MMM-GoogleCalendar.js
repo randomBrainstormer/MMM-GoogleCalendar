@@ -120,9 +120,17 @@ Module.register("MMM-GoogleCalendar", {
     }
 
     if (notification === "AUTH_NEEDED") {
+      // relay the notification to the node_helper
+      this.sendSocketNotification(notification, payload);
+    } else {
+      // reset error URL
+      this.errorUrl = null;
+    }
+
+    if (notification === "AUTH_NEEDED_QR") {
       this.error = "ERROR_AUTH_NEEDED";
       if (payload.credentialType === "web") {
-        this.errorUrl = payload.url;
+        this.errorPayload = payload;
       }
       this.updateDom(this.config.animationSpeed);
       return;
@@ -177,8 +185,13 @@ Module.register("MMM-GoogleCalendar", {
 
     if (this.error) {
       // web credentials will have a WEB url
-      if (this.error === "ERROR_AUTH_NEEDED" && this.errorUrl) {
-        wrapper.innerHTML = `Please <a href=${this.errorUrl}>click here</a> to authorize this module.`;
+      if (this.error === "ERROR_AUTH_NEEDED" && this.errorPayload) {
+        if (this.errorPayload.qrUrl) {
+          wrapper.innerHTML = `Please click or scan this QR code on your phone in order to authorize this module:<br><br>
+                              <a href=${this.errorPayload.url}><img src="${this.errorPayload.qrUrl}"/></a>`;
+        } else {
+          wrapper.innerHTML = `Please <a href=${this.errorPayload.url}>click here</a> to authorize this module.`;
+        }
       } else {
         // default to generic error
         wrapper.innerHTML = this.error;

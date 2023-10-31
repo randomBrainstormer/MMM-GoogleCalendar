@@ -3,6 +3,7 @@ const { google } = require("googleapis");
 const { encodeQueryData } = require("./helpers");
 const fs = require("fs");
 const Log = require("logger");
+const qr = require('qrcode')
 
 const TOKEN_PATH = "/token.json";
 
@@ -22,6 +23,26 @@ module.exports = NodeHelper.create({
 
   // Override socketNotificationReceived method.
   socketNotificationReceived: function (notification, payload) {
+    if (notification === "AUTH_NEEDED") {
+      qr.toDataURL(payload.url, {
+        type: "image/png",
+        width: 320,
+        height: 320,
+        margin: 5,
+        errorCorrectionLevel: 'H',
+        quality: 0.95,
+      }, (err, qrUrl) => 
+      {
+        if (err) {
+          Log.warn(this.name + ": " + err);
+          payload.qrUrl = false;
+        } else {
+          payload.qrUrl = qrUrl;
+        }
+        this.sendSocketNotification("AUTH_NEEDED_QR", payload)
+      });
+    }
+
     if (notification === "MODULE_READY") {
       if (!this.calendarService) {
         if (payload.queryParams) {
