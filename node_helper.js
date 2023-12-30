@@ -40,6 +40,7 @@ module.exports = NodeHelper.create({
         payload.calendarID,
         payload.fetchInterval,
         payload.maximumEntries,
+	payload.pastDaysCount,
         payload.id
       );
     }
@@ -209,12 +210,13 @@ module.exports = NodeHelper.create({
     calendarID,
     fetchInterval,
     maximumEntries,
+    pastDaysCount,
     identifier
   ) {
     this.calendarService.events.list(
       {
         calendarId: calendarID,
-        timeMin: new Date().toISOString(),
+	timeMin: (new Date(new Date().setDate(new Date().getDate() - pastDaysCount))).toISOString(),
         maxResults: maximumEntries,
         singleEvents: true,
         orderBy: "startTime"
@@ -248,6 +250,7 @@ module.exports = NodeHelper.create({
           calendarID,
           fetchInterval,
           maximumEntries,
+          pastDaysCount,
           identifier
         );
       }
@@ -258,6 +261,7 @@ module.exports = NodeHelper.create({
     calendarID,
     fetchInterval,
     maximumEntries,
+    pastDaysCount,
     identifier
   ) {
     var _this = this;
@@ -267,6 +271,7 @@ module.exports = NodeHelper.create({
           calendarID,
           fetchInterval,
           maximumEntries,
+          pastDaysCount,
           identifier
         );
       }, fetchInterval);
