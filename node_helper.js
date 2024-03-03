@@ -216,8 +216,8 @@ module.exports = NodeHelper.create({
     this.calendarService.events.list(
       {
         calendarId: calendarID,
-	timeMin: (new Date(new Date().setDate(new Date().getDate() - pastDaysCount))).toISOString(),
-        maxResults: maximumEntries,
+        timeMin: (new Date(new Date().setDate(new Date().getDate() - pastDaysCount))).toISOString(), // Lower bound (exclusive) for an event's end time to filter by
+        maxResults: maximumEntries, // Maximum number of events returned
         singleEvents: true,
         orderBy: "startTime"
       },

@@ -520,6 +520,37 @@ Module.register("MMM-GoogleCalendar", {
     return wrapper;
   },
 
+  /**
+	 * Filter out events according to the calendar config
+	 * @param {object} event the google calendar event
+	 * @param {array} eventsList the array of event
+	 * @returns {boolean}
+	 */
+  filterEvent: function(event, eventsList) {
+
+	// check if event name is in the excluded list
+	if (this.config.excludedEvents?.length && this.config.excludedEvents.includes(event.summary)) {
+		Log.debug(`Event ${event.id} filtered due to excludedEvents settings`);
+		return true
+	}
+
+	if (this.config.hidePrivate && ['private', 'confidential'].includes(event.visibility?.toLowerCase())) {
+		return true;
+  	}
+
+	if (this.config.hideDuplicates && this.listContainsEvent(eventsList, event)) {
+		return true;
+	}
+
+	const now = new Date();
+
+	if (this.config.hideOngoing && event.startDate < now && event.endDate > now) {
+		return true;
+	}
+
+	return false;
+	},
+
   fetchCalendars: function () {
     this.config.calendars.forEach((calendar) => {
       if (!calendar.calendarID) {
@@ -628,33 +659,23 @@ Module.register("MMM-GoogleCalendar", {
       for (const e in calendar) {
         const event = JSON.parse(JSON.stringify(calendar[e])); // clone object
 
-		// check if event is to be excluded
-		if (this.config.excludedEvents.includes(event.summary)) {
-			continue;
-		}
-
         // added props
         event.calendarID = calendarID;
         event.endDate = this.extractCalendarDate(event.end);
         event.startDate = this.extractCalendarDate(event.start);
 
-        if (event.endDate < now) {
-          continue;
-        }
-        if (this.config.hidePrivate) {
-          if (event.visibility === "PRIVATE") {
-            // do not add the current event, skip it
-            continue;
-          }
-        }
-        if (this.config.hideOngoing) {
-          if (event.endDate < now) {
-            continue;
-          }
-        }
-        if (this.config.hideDuplicates && this.listContainsEvent(events, event)) {
-          continue;
-        }
+		// check if event is to be excluded
+		if (this.filterEvent(event, events)) {
+			continue;
+		}
+
+		// exclude if events are duplicate - this check is outside filterEvent fn
+		// to prevent overloading on passing params
+		if (this.config.hideDuplicates && this.listContainsEvent(events, event)) {
+			continue;
+		}
+
+
         event.url = event.htmlLink;
         event.today =
           event.startDate >= today &&
@@ -1060,6 +1081,11 @@ Module.register("MMM-GoogleCalendar", {
         let endDate = event.end?.date ?? event.end?.dateTime;
         event.startDate = (startDate) ? moment(startDate).valueOf() : null;
         event.endDate = (endDate) ? moment(endDate).valueOf() : null;
+
+		if (this.config.broadcastEvents && !this.config.broadcastPastEvents && event.endDate < now) {
+			continue
+		}
+
         eventList.push(event);
       }
     }
