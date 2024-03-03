@@ -36,6 +36,7 @@ Module.register("MMM-GoogleCalendar", {
     hidePrivate: false,
     hideOngoing: false,
     hideTime: false,
+    hideDuplicates: false,
     colored: false,
     coloredSymbolOnly: false,
     customEvents: [], // Array of {keyword: "", symbol: "", color: ""} where Keyword is a regexp and symbol/color are to be applied for matched
@@ -366,7 +367,7 @@ Module.register("MMM-GoogleCalendar", {
           if (this.config.showEnd) {
             timeWrapper.innerHTML += ` - ${this.capFirst(moment(event.endDate, "x").format("LT"))}`;
           }
-          
+
           eventWrapper.appendChild(timeWrapper);
           titleWrapper.classList.add("align-right");
         }
@@ -527,8 +528,10 @@ Module.register("MMM-GoogleCalendar", {
       }
 
       const calendarConfig = {
-        maximumEntries: calendar.maximumEntries,
-        maximumNumberOfDays: calendar.maximumNumberOfDays
+		maximumEntries: calendar.maximumEntries,
+		maximumNumberOfDays: calendar.maximumNumberOfDays,
+		broadcastPastEvents: calendar.broadcastPastEvents,
+		excludedEvents: calendar.excludedEvents,
       };
 
       if (
@@ -625,6 +628,11 @@ Module.register("MMM-GoogleCalendar", {
       for (const e in calendar) {
         const event = JSON.parse(JSON.stringify(calendar[e])); // clone object
 
+		// check if event is to be excluded
+		if (this.config.excludedEvents.includes(event.summary)) {
+			continue;
+		}
+
         // added props
         event.calendarID = calendarID;
         event.endDate = this.extractCalendarDate(event.end);
@@ -644,7 +652,7 @@ Module.register("MMM-GoogleCalendar", {
             continue;
           }
         }
-        if (this.listContainsEvent(events, event)) {
+        if (this.config.hideDuplicates && this.listContainsEvent(events, event)) {
           continue;
         }
         event.url = event.htmlLink;
