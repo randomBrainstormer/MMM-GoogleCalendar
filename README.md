@@ -3,7 +3,7 @@
 This module is a customization from MagicMirror's default calendar module to display your Google calendars (including the Google Family calendar) without needing to make calendars public or using iCals. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
 
 ## Screenshot
-<img width="471" alt="Schermata 2024-03-04 alle 17 31 42" src="https://github.com/randomBrainstormer/MMM-GoogleCalendar/assets/4858703/922b8bf4-daad-4a3f-90f6-622709b5313b">
+![screenshot](screenshot.png)
 
 ## How to Setup
 
