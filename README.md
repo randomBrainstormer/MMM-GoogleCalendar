@@ -2,19 +2,22 @@
 
 This module is a customization from MagicMirror's default calendar module to display your Google calendars (including the Google Family calendar) without needing to make calendars public or using iCals. Inspired by the [GoogleTask module](https://github.com/jgauth/MMM-GoogleTasks).
 
+## Screenshot
+
+
 ## How to Setup
 
 1. **Open Your Command Line Tool:** This is where we'll type in some instructions for your computer. If you're not sure how to open it, here are some quick guides for [Windows](https://www.lifewire.com/how-to-open-command-prompt-2618089), [Mac](https://www.macworld.co.uk/how-to/open-terminal-mac-3608274/), and [Linux](https://www.howtogeek.com/682770/how-to-open-the-terminal-on-a-mac/).
 
-2. **Navigate to the Right Folder:** We need to move to the directory where your MagicMirror's modules are stored. If your installation followed the standard path, type the following command and press Enter:  
+2. **Navigate to the Right Folder:** We need to move to the directory where your MagicMirror's modules are stored. If your installation followed the standard path, type the following command and press Enter:
    `cd ~/MagicMirror/modules`
 
-3. **Download this MMM-GoogleCalendar Module:** Now, we'll fetch the module that allows you to display your Google Calendar. Enter this command and hit Enter:  
+3. **Download this MMM-GoogleCalendar Module:** Now, we'll fetch the module that allows you to display your Google Calendar. Enter this command and hit Enter:
    `git clone https://github.com/randomBrainstormer/MMM-GoogleCalendar.git`
 
-4. **Install Necessary Dependencies:** Before installing the dependencies, we need to move into the calendar module's directory. Type this command to enter the module's directory:  
-   `cd MMM-GoogleCalendar`  
-   Now, let's install the necessary depenencies for the module. Type the following command and press Enter:  
+4. **Install Necessary Dependencies:** Before installing the dependencies, we need to move into the calendar module's directory. Type this command to enter the module's directory:
+   `cd MMM-GoogleCalendar`
+   Now, let's install the necessary depenencies for the module. Type the following command and press Enter:
    `npm install`
 
 Now that the module is installed, you're on the right track! The next steps will involve setting up and granting the necessary access for your calendar to be displayed. Follow the upcoming instructions to complete the setup.
@@ -23,33 +26,33 @@ Now that the module is installed, you're on the right track! The next steps will
 
 To get your calendar showing up, we need to do a bit of setup with Google's tools. Here's how you can get everything ready:
 
-1. **Create a Google Cloud Project:**  
-   - First, you'll need to create a new project on Google Cloud Platform to manage your access to the Google Calendar API.  
+1. **Create a Google Cloud Project:**
+   - First, you'll need to create a new project on Google Cloud Platform to manage your access to the Google Calendar API.
    - Follow the detailed guide [here](https://developers.google.com/workspace/guides/create-project) to create your project. You can also use an existing project if you already have one.
 
-2. **Enable Google Calendar API:**  
-   - Once your project is ready, you need to enable the Google Calendar API for it.  
+2. **Enable Google Calendar API:**
+   - Once your project is ready, you need to enable the Google Calendar API for it.
    - Visit [this link](https://developers.google.com/calendar/api/quickstart/nodejs#set_up_your_environment) and follow the instructions to enable the API in your project.
 
-3. **Configure OAuth Consent Screen:**  
-   - For your application to access your Google Calendar, you'll need to configure the OAuth consent screen.  
-   - This step is crucial for authentication; detailed instructions can be found [here](https://developers.google.com/calendar/api/quickstart/nodejs#configure_the_oauth_consent_screen).  
+3. **Configure OAuth Consent Screen:**
+   - For your application to access your Google Calendar, you'll need to configure the OAuth consent screen.
+   - This step is crucial for authentication; detailed instructions can be found [here](https://developers.google.com/calendar/api/quickstart/nodejs#configure_the_oauth_consent_screen).
    - Don't forget to add yourself as a user once you've configured the consent screen.
 
 After these initial setup steps, you're ready to create an OAuth 2.0 client ID:
 
-4. **Create OAuth Client ID and Download Credentials:**  
+4. **Create OAuth Client ID and Download Credentials:**
    - Within your Google Cloud project, proceed to create an OAuth client ID, explicitly choosing **"Desktop application"** as the application type. It's vital to select this specific type; choosing any other may lead to issues during authentication.
    - Once you've selected "Desktop application," go ahead and create the client ID.
    - Download the newly created client ID and save it as `credentials.json`.
    - This `credentials.json` file is crucial as it enables the connection between your MagicMirror and your Google Calendar.
 
-5. **Move Your Credentials File:**  
+5. **Move Your Credentials File:**
    - Take the `credentials.json` file and place it inside your MMM-GoogleCalendar directory: `MagicMirror/modules/MMM-GoogleCalendar/`.
 
-6. **Authenticate with Google:**  
-   - Inside the MMM-GoogleCalendar directory, run `node authorize.js` from your terminal.  
-   - This command will open a Google sign-in page in your web browser. Log in with your Google account as you normally would.  
+6. **Authenticate with Google:**
+   - Inside the MMM-GoogleCalendar directory, run `node authorize.js` from your terminal.
+   - This command will open a Google sign-in page in your web browser. Log in with your Google account as you normally would.
    - During this process, you might see a screen alerting you that "Google hasn't verified this app." This is a standard message for apps using OAuth that aren't published yet. Simply look for and click on the "Continue" button to proceed with the authentication.
 
 By completing these steps, you've successfully laid the groundwork for your Google Calendar to communicate with your MagicMirror. The module is installed, and with the necessary permissions configured, you're ready to personalize your calendar settings.
@@ -65,7 +68,7 @@ Now it's time to bring your calendar to life on your MagicMirror! To do this, yo
 Here's how you set it up:
 
 1. Open the `config/config.js` file in your MagicMirror directory. Remember, you should now be in the main directory of MagicMirror², not in the MMM-GoogleCalendar module directory. If you're not sure you're in the right place, the path should look something like this: `~/MagicMirror/config/config.js`.
-2. **Add Module Configuration:**  
+2. **Add Module Configuration:**
    - Now, integrate the module into your MagicMirror² by adding the following configuration block to the `modules` array in the `config/config.js` file. It's crucial to replace `"MyGoogleCalendarIDHere"` with your actual calendar ID.
 
      ```javascript
@@ -85,7 +88,7 @@ Here's how you set it up:
      },
      ```
 
-     **Finding Your Google Calendar ID:**  
+     **Finding Your Google Calendar ID:**
      If you're unsure where to find your Google Calendar ID, it's quite straightforward:
      - Head over to your Google Calendar by visiting [https://calendar.google.com](https://calendar.google.com).
      - Look for the settings icon (resembling a gear) in the upper right corner and click on it to access `Settings`.
@@ -101,13 +104,13 @@ We are committed to improving and updating this module, so if you have enhanceme
 
 ## FAQ
 
-**What happened to the old types of OAuth credentials?**  
+**What happened to the old types of OAuth credentials?**
 Previously, we used the `Web Application` and `TV & Limited Input devices` types for OAuth credentials. These are no longer used because, with the current version of the Google libraries, the `Desktop app` credential type offers the simplest and most straightforward setup process for this module.
 
-**Can this module display `.ICS` calendars or any other format?**  
+**Can this module display `.ICS` calendars or any other format?**
 Unfortunately, this module is designed to work exclusively with Google Calendar. Google Calendar data is formatted differently, which is why there's no support for other calendar types within this module. If you need to display `.ICS` calendars or other formats, consider using the default MagicMirror² calendar module.
 
-**I'm having trouble getting this module to work. What should I do?**  
+**I'm having trouble getting this module to work. What should I do?**
 First, don't worry! We have a troubleshooting guide that addresses common issues and their solutions. If you're still stuck after consulting the guide, please feel free to [open an issue here](https://github.com/randomBrainstormer/MMM-G
 
 ## Troubleshooting
@@ -125,3 +128,4 @@ First, don't worry! We have a troubleshooting guide that addresses common issues
 | `Error: NOENT: no such file or directory, open '/home/pi/MagicMirror/modules/MMM-GoogleCalendar/token.json` | You need to run `authorize.js` so the token file can be auto generated. Check the [Authentication Setup](https://github.com/randomBrainstormer/MMM-GoogleCalendar/edit/main/README.md#authentication-setup) section for guided steps.
 | I run `node authorize` but nothing happens, it just sits there with no updates. | You're probably connecting to your Pi through SSH, which is probably the nicest way to connect, however, this new module forces a browser to open in the Pi itself, hence you're unable to see it when connecting through SSH, try using VNC or connecting the keyboard/mouse directly to the pi.
 | When attempting to log in after executing `authorize.js`, I encounter a 403 Error with the message "Access Denied". | To resolve this, ensure that your email address is included in the "Test Users" list found within the "OAuth Consent" screen.
+| When attempting to authenticate I get "unkown error" from Google | Most likely some extension in your browser is blocking some of the scripts from Google. Try disabling all extensions and try again, or you can also try using a different browser.
