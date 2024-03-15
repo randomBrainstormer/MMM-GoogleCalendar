@@ -1065,6 +1065,7 @@ Module.register("MMM-GoogleCalendar", {
    * The all events available in one array, sorted on startDate.
    */
   broadcastEvents: function () {
+    const now = new Date();
     const eventList = [];
     for (const calendarID in this.calendarData) {
       for (const ev of this.calendarData[calendarID]) {
