@@ -1,6 +1,6 @@
 const NodeHelper = require("node_helper");
 const { google } = require("googleapis");
-const { encodeQueryData } = require("./helpers");
+const { encodeQueryData, formatError } = require("./helpers");
 const fs = require("fs");
 const Log = require("logger");
 
@@ -40,7 +40,7 @@ module.exports = NodeHelper.create({
         payload.calendarID,
         payload.fetchInterval,
         payload.maximumEntries,
-	payload.pastDaysCount,
+        payload.pastDaysCount,
         payload.id
       );
     }
@@ -189,8 +189,8 @@ module.exports = NodeHelper.create({
    * Check for data.error
    * @param {object} error
    */
-  checkForHTTPError: function(request) {
-	return request?.response?.data?.error?.toUpperCase();
+  checkForHTTPError: function (request) {
+    return request?.response?.data?.error?.toUpperCase();
   },
 
   startCalendarService: function (auth, _this) {
@@ -216,7 +216,9 @@ module.exports = NodeHelper.create({
     this.calendarService.events.list(
       {
         calendarId: calendarID,
-        timeMin: (new Date(new Date().setDate(new Date().getDate() - pastDaysCount))).toISOString(), // Lower bound (exclusive) for an event's end time to filter by
+        timeMin: new Date(
+          new Date().setDate(new Date().getDate() - pastDaysCount)
+        ).toISOString(), // Lower bound (exclusive) for an event's end time to filter by
         maxResults: maximumEntries, // Maximum number of events returned
         singleEvents: true,
         orderBy: "startTime"
@@ -226,14 +228,14 @@ module.exports = NodeHelper.create({
           Log.error(
             "MMM-GoogleCalendar Error. Could not fetch calendar: ",
             calendarID,
-            JSON.stringify(err)
+            formatError(err)
           );
           let error_type = NodeHelper.checkFetchError(err);
-		  if (error_type === 'MODULE_ERROR_UNSPECIFIED') {
-			  error_type = this.checkForHTTPError(err) || error_type;
-		  }
+          if (error_type === "MODULE_ERROR_UNSPECIFIED") {
+            error_type = this.checkForHTTPError(err) || error_type;
+          }
 
-		  // send error to module
+          // send error to module
           this.sendSocketNotification("CALENDAR_ERROR", {
             id: identifier,
             error_type
