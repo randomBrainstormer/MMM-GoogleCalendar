@@ -51,7 +51,7 @@ After these initial setup steps, you're ready to create an OAuth 2.0 client ID:
    - Take the `credentials.json` file and place it inside your MMM-GoogleCalendar directory: `MagicMirror/modules/MMM-GoogleCalendar/`.
 
 6. **Authenticate with Google:**
-   - Inside the MMM-GoogleCalendar directory, run `sudo node authorize.js` from your terminal.
+   - Inside the MMM-GoogleCalendar directory, run `node authorize.js` from your terminal.
    - This command will open a Google sign-in page in your web browser. Log in with your Google account as you normally would. If your browser does not open, use the link from the output in your terminal.
    - During this process, you might see a screen alerting you that "Google hasn't verified this app." This is a standard message for apps using OAuth that aren't published yet. Simply look for and click on the "Continue" button to proceed with the authentication.
 
