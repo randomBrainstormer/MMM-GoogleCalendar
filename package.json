@@ -1,6 +1,6 @@
 {
   "name": "mmm-googlecalendar",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "displayName": "MMM-GoogleCalendar",
   "description": "Display your Google calendars in MagicMirror (including google's family calendar) without using iCals nor any public calendar. ",
   "main": "MMM-GoogleCalendar.js",
@@ -27,6 +27,9 @@
   "homepage": "https://github.com/randomBrainstormer/MMM-GoogleCalendar#readme",
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
-    "googleapis": "^105.0.0"
+    "googleapis": "^105.0.0",
+    "open": "^10.1.0",
+    "readline": "^1.3.0",
+    "server-destroy": "^1.0.1"
   }
 }

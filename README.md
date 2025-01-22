@@ -52,7 +52,7 @@ After these initial setup steps, you're ready to create an OAuth 2.0 client ID:
 
 6. **Authenticate with Google:**
    - Inside the MMM-GoogleCalendar directory, run `node authorize.js` from your terminal.
-   - This command will open a Google sign-in page in your web browser. Log in with your Google account as you normally would.
+   - This command will open a Google sign-in page in your web browser. Log in with your Google account as you normally would. If your browser does not open, use the link from the output in your terminal.
    - During this process, you might see a screen alerting you that "Google hasn't verified this app." This is a standard message for apps using OAuth that aren't published yet. Simply look for and click on the "Continue" button to proceed with the authentication.
 
 By completing these steps, you've successfully laid the groundwork for your Google Calendar to communicate with your MagicMirror. The module is installed, and with the necessary permissions configured, you're ready to personalize your calendar settings.
