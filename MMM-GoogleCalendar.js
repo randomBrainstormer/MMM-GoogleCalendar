@@ -111,10 +111,10 @@ Module.register("MMM-GoogleCalendar", {
   socketNotificationReceived: function (notification, payload) {
     // Authentication done before any calendar is fetched
     if (notification === "AUTH_FAILED") {
-      let error_message = this.translate(payload.error_type);
+      const errorMessage = this.translate(payload.error_type);
       this.error = this.translate("MODULE_CONFIG_ERROR", {
         MODULE_NAME: this.name,
-        ERROR: error_message
+        ERROR: errorMessage
       });
       this.loaded = true;
       this.updateDom(this.config.animationSpeed);
@@ -122,9 +122,11 @@ Module.register("MMM-GoogleCalendar", {
     }
 
     if (notification === "AUTH_NEEDED") {
-      this.error = "ERROR_AUTH_NEEDED";
-      if (payload.credentialType === "web") {
+      if (payload.credentialType === "web" && payload.url) {
+        this.error = "AUTH_PROMPT_CLICK_HERE";
         this.errorUrl = payload.url;
+      } else {
+        this.error = "AUTH_ERROR_GENERIC";
       }
       this.updateDom(this.config.animationSpeed);
       return;
@@ -153,10 +155,10 @@ Module.register("MMM-GoogleCalendar", {
         }
       }
     } else if (notification === "CALENDAR_ERROR") {
-      let error_message = this.translate(payload.error_type);
+      const errorMessage = this.translate(payload.error_type);
       this.error = this.translate("MODULE_CONFIG_ERROR", {
         MODULE_NAME: this.name,
-        ERROR: error_message
+        ERROR: errorMessage
       });
       this.loaded = true;
     }
@@ -178,14 +180,15 @@ Module.register("MMM-GoogleCalendar", {
     wrapper.className = this.config.tableClass;
 
     if (this.error) {
-      // web credentials will have a WEB url
-      if (this.error === "ERROR_AUTH_NEEDED" && this.errorUrl) {
-        wrapper.innerHTML = `Please <a href=${this.errorUrl}>click here</a> to authorize this module.`;
-      } else {
-        // default to generic error
+      if (this.error === "AUTH_PROMPT_CLICK_HERE" && this.errorUrl) {
+        const authPrompt = this.translate("AUTH_PROMPT_CLICK_HERE");
+        wrapper.innerHTML = authPrompt.replace("{authUrl}", this.errorUrl);
+      } else if (this.error === "AUTH_ERROR_GENERIC") { // New generic auth error
+        wrapper.innerHTML = this.translate(this.error);
+      } else { // Existing error messages (likely already translated)
         wrapper.innerHTML = this.error;
-        wrapper.className = this.config.tableClass + " dimmed";
       }
+      wrapper.className = `${this.config.tableClass} dimmed`;
       return wrapper;
     }
 
@@ -193,13 +196,13 @@ Module.register("MMM-GoogleCalendar", {
       wrapper.innerHTML = this.loaded
         ? this.translate("EMPTY")
         : this.translate("LOADING");
-      wrapper.className = this.config.tableClass + " dimmed";
+      wrapper.className = `${this.config.tableClass} dimmed`;
       return wrapper;
     }
 
     let currentFadeStep = 0;
-    let startFade;
-    let fadeSteps;
+    let startFade = 0; // Initialize with a default value
+    let fadeSteps = 0; // Initialize with a default value
 
     if (this.config.fade && this.config.fadePoint < 1) {
       if (this.config.fadePoint < 0) {
@@ -240,8 +243,7 @@ Module.register("MMM-GoogleCalendar", {
       const eventWrapper = document.createElement("tr");
 
       if (this.config.colored && !this.config.coloredSymbolOnly) {
-        eventWrapper.style.cssText =
-          "color:" + this.colorForCalendar(event.calendarID);
+        eventWrapper.style.cssText = `color:${this.colorForCalendar(event.calendarID)}`;
       }
 
       eventWrapper.className = "normal event";
@@ -250,36 +252,35 @@ Module.register("MMM-GoogleCalendar", {
 
       if (this.config.displaySymbol) {
         if (this.config.colored && this.config.coloredSymbolOnly) {
-          symbolWrapper.style.cssText =
-            "color:" + this.colorForCalendar(event.calendarID);
+          symbolWrapper.style.cssText = `color:${this.colorForCalendar(event.calendarID)}`;
         }
 
         const symbolClass = this.symbolClassForCalendar(event.calendarID);
-        symbolWrapper.className = "symbol align-right " + symbolClass;
+        symbolWrapper.className = `symbol align-right ${symbolClass}`;
 
         const symbols = this.symbolsForEvent(event);
         // If symbols are displayed and custom symbol is set, replace event symbol
         if (this.config.displaySymbol && this.config.customEvents.length > 0) {
-          for (let ev in this.config.customEvents) {
+          for (const customEvent of this.config.customEvents) { // Use for...of for arrays
             if (
-              typeof this.config.customEvents[ev].symbol !== "undefined" &&
-              this.config.customEvents[ev].symbol !== ""
+              typeof customEvent.symbol !== "undefined" &&
+              customEvent.symbol !== ""
             ) {
-              let needle = new RegExp(
-                this.config.customEvents[ev].keyword,
+              const needle = new RegExp(
+                customEvent.keyword,
                 "gi"
               );
               if (needle.test(event.title)) {
-                symbols[0] = this.config.customEvents[ev].symbol;
+                symbols[0] = customEvent.symbol;
                 break;
               }
             }
           }
         }
-        symbols.forEach((s, index) => {
+        symbols.forEach((s, idx) => { // Renamed index to idx to avoid conflict
           const symbol = document.createElement("span");
-          symbol.className = "fa fa-fw fa-" + s;
-          if (index > 0) {
+          symbol.className = `fa fa-fw fa-${s}`;
+          if (idx > 0) {
             symbol.style.paddingLeft = "5px";
           }
           symbolWrapper.appendChild(symbol);
@@ -301,32 +302,29 @@ Module.register("MMM-GoogleCalendar", {
         repeatingCountTitle = this.countTitleForCalendar(event.calendarID);
 
         if (repeatingCountTitle !== "") {
-          const thisYear = new Date(parseInt(event.startDate)).getFullYear(),
-            yearDiff = thisYear - event.firstYear;
+          const thisYear = new Date(parseInt(event.startDate, 10)).getFullYear(); // Add radix for parseInt
+          const yearDiff = thisYear - event.firstYear;
 
-          repeatingCountTitle = ", " + yearDiff + ". " + repeatingCountTitle;
+          repeatingCountTitle = `, ${yearDiff}. ${repeatingCountTitle}`; // Template literal
         }
       }
 
       // Color events if custom color is specified
       if (this.config.customEvents.length > 0) {
-        for (let ev in this.config.customEvents) {
+        for (const customEvent of this.config.customEvents) { // Use for...of for arrays
           if (
-            typeof this.config.customEvents[ev].color !== "undefined" &&
-            this.config.customEvents[ev].color !== ""
+            typeof customEvent.color !== "undefined" &&
+            customEvent.color !== ""
           ) {
-            let needle = new RegExp(this.config.customEvents[ev].keyword, "gi");
+            const needle = new RegExp(customEvent.keyword, "gi");
             if (needle.test(event.title)) {
               // Respect parameter ColoredSymbolOnly also for custom events
               if (!this.config.coloredSymbolOnly) {
-                eventWrapper.style.cssText =
-                  "color:" + this.config.customEvents[ev].color;
-                titleWrapper.style.cssText =
-                  "color:" + this.config.customEvents[ev].color;
+                eventWrapper.style.cssText = `color:${customEvent.color}`;
+                titleWrapper.style.cssText = `color:${customEvent.color}`;
               }
               if (this.config.displaySymbol) {
-                symbolWrapper.style.cssText =
-                  "color:" + this.config.customEvents[ev].color;
+                symbolWrapper.style.cssText = `color:${customEvent.color}`;
               }
               break;
             }
@@ -346,9 +344,9 @@ Module.register("MMM-GoogleCalendar", {
       const titleClass = this.titleClassForCalendar(event.calendarID);
 
       if (!this.config.colored) {
-        titleWrapper.className = "title bright " + titleClass;
+        titleWrapper.className = `title bright ${titleClass}`;
       } else {
-        titleWrapper.className = "title " + titleClass;
+        titleWrapper.className = `title ${titleClass}`;
       }
 
       if (this.config.timeFormat === "dateheaders") {
@@ -357,9 +355,7 @@ Module.register("MMM-GoogleCalendar", {
           titleWrapper.classList.add("align-left");
         } else {
           const timeWrapper = document.createElement("td");
-          timeWrapper.className =
-            "time light align-left " +
-            this.timeClassForCalendar(event.calendarID);
+          timeWrapper.className = `time light align-left ${this.timeClassForCalendar(event.calendarID)}`;
           timeWrapper.style.paddingLeft = "2px";
           timeWrapper.innerHTML = moment(event.startDate).format("LT");
 
@@ -386,10 +382,7 @@ Module.register("MMM-GoogleCalendar", {
           );
           // Add end time if showEnd
           if (this.config.showEnd) {
-            timeWrapper.innerHTML += "-";
-            timeWrapper.innerHTML += this.capFirst(
-              moment(event.endDate).format(this.config.dateEndFormat)
-            );
+            timeWrapper.innerHTML += `-${this.capFirst(moment(event.endDate).format(this.config.dateEndFormat))}`;
           }
           // For full day events we use the fullDayEventDateFormat
           if (event.fullDayEvent) {
@@ -403,7 +396,7 @@ Module.register("MMM-GoogleCalendar", {
             // Ongoing and getRelative is set
             timeWrapper.innerHTML = this.capFirst(
               this.translate("RUNNING", {
-                fallback: this.translate("RUNNING") + " {timeUntilEnd}",
+                fallback: `${this.translate("RUNNING")} {timeUntilEnd}`, // Template literal
                 timeUntilEnd: moment(event.endDate).fromNow(true)
               })
             );
@@ -449,8 +442,8 @@ Module.register("MMM-GoogleCalendar", {
             } else {
               timeWrapper.innerHTML = this.capFirst(
                 moment(event.startDate).calendar(null, {
-                  sameDay: "[" + this.translate("TODAY") + "]",
-                  nextDay: "[" + this.translate("TOMORROW") + "]",
+                  sameDay: `[${this.translate("TODAY")}]`, // Template literal
+                  nextDay: `[${this.translate("TOMORROW")}]`, // Template literal
                   nextWeek: "dddd",
                   sameElse: this.config.dateFormat
                 })
@@ -466,14 +459,13 @@ Module.register("MMM-GoogleCalendar", {
             // Ongoing event
             timeWrapper.innerHTML = this.capFirst(
               this.translate("RUNNING", {
-                fallback: this.translate("RUNNING") + " {timeUntilEnd}",
+                fallback: `${this.translate("RUNNING")} {timeUntilEnd}`, // Template literal
                 timeUntilEnd: moment(event.endDate).fromNow(true)
               })
             );
           }
         }
-        timeWrapper.className =
-          "time light " + this.timeClassForCalendar(event.calendarID);
+        timeWrapper.className = `time light ${this.timeClassForCalendar(event.calendarID)}`;
         eventWrapper.appendChild(timeWrapper);
       }
 
@@ -521,40 +513,49 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-	 * Filter out events according to the calendar config
-	 * @param {object} event the google calendar event
-	 * @param {array} eventsList the array of event
-	 * @returns {boolean}
+	 * Filter out events according to the calendar config.
+	 * This function is called from `createEventList` for each event.
+	 * @param {object} event - The event object to check.
+	 * @param {array} eventsList - The list of events already processed and not filtered out, used for duplicate checking.
+	 * @returns {boolean} - True if the event should be filtered out (excluded), false otherwise.
 	 */
   filterEvent: function(event, eventsList) {
+    // Note: The order of checks can impact performance slightly, but the current order is logical.
+    // For example, checking for excludedEvents or hidePrivate first might be marginally faster
+    // if those are common, as it avoids the listContainsEvent check for duplicates.
 
-	// check if event name is in the excluded list
-	if (this.config.excludedEvents?.length && this.config.excludedEvents.includes(event.summary)) {
-		Log.debug(`Event ${event.id} filtered due to excludedEvents settings`);
-		return true
-	}
+    // Filter based on `excludedEvents` config
+  if (this.config.excludedEvents?.length && this.config.excludedEvents.includes(event.summary)) {
+    Log.debug(`Event ${event.id} ('${event.summary}') filtered due to excludedEvents settings.`);
+    return true;
+  }
 
-	if (this.config.hidePrivate && ['private', 'confidential'].includes(event.visibility?.toLowerCase())) {
-		return true;
-  	}
+  // Filter based on `hidePrivate` config
+  if (this.config.hidePrivate && ['private', 'confidential'].includes(event.visibility?.toLowerCase())) {
+    Log.debug(`Event ${event.id} ('${event.summary}') filtered due to hidePrivate settings.`);
+    return true;
+  }
 
-	if (this.config.hideDuplicates && this.listContainsEvent(eventsList, event)) {
-		return true;
-	}
+  // Filter based on `hideDuplicates` config by checking against the eventsList
+  if (this.config.hideDuplicates && this.listContainsEvent(eventsList, event)) {
+    Log.debug(`Event ${event.id} ('${event.summary}') filtered due to hideDuplicates settings.`);
+    return true;
+  }
 
-	const now = new Date();
+  const now = new Date();
+  // Filter based on `hideOngoing` config
+  if (this.config.hideOngoing && event.startDate < now && event.endDate > now) {
+    Log.debug(`Event ${event.id} ('${event.summary}') filtered due to hideOngoing settings.`);
+    return true;
+  }
 
-	if (this.config.hideOngoing && event.startDate < now && event.endDate > now) {
-		return true;
-	}
-
-	return false;
-	},
+  return false; // Event should not be filtered out
+  },
 
   fetchCalendars: function () {
     this.config.calendars.forEach((calendar) => {
       if (!calendar.calendarID) {
-        Log.warn(this.name + ": Unable to fetch, no calendar ID found!");
+        Log.warn(`${this.name}: Unable to fetch, no calendar ID found!`); // Template literal
         return;
       }
 
@@ -626,12 +627,12 @@ Module.register("MMM-GoogleCalendar", {
 
   /**
    * Parse google date obj
-   * @param {*} googleDate
-   * @returns timestamp
+   * @param {object} googleDate - The google date object. (type annotation)
+   * @returns {number} timestamp (type annotation)
    */
   extractCalendarDate: function (googleDate) {
     // case is "all day event"
-    if (googleDate.hasOwnProperty("date")) {
+    if (Object.prototype.hasOwnProperty.call(googleDate, "date")) { // Fixed no-prototype-builtins
       return moment(googleDate.date).valueOf();
     }
 
@@ -650,13 +651,13 @@ Module.register("MMM-GoogleCalendar", {
       .startOf("day")
       .add(this.config.maximumNumberOfDays, "days")
       .toDate();
-    let events = [];
+    const events = []; // Changed from let to const as it's reassigned with .slice() later, but primarily mutated.
 
-    const formatStr = undefined;
+    const formatStr = undefined; // This seems unused, consider removing if truly not needed.
 
     for (const calendarID in this.calendarData) {
       const calendar = this.calendarData[calendarID];
-      for (const e in calendar) {
+      for (const e in calendar) { // Consider using for...of if calendar is an array or iterating its keys differently
         const event = JSON.parse(JSON.stringify(calendar[e])); // clone object
 
         // added props
@@ -664,17 +665,15 @@ Module.register("MMM-GoogleCalendar", {
         event.endDate = this.extractCalendarDate(event.end);
         event.startDate = this.extractCalendarDate(event.start);
 
-		// check if event is to be excluded
+        // Call filterEvent to determine if the event should be excluded based on various settings.
+        // The 'events' array (eventsList in filterEvent) is the accumulating list of events
+        // that have passed all filters so far, used for duplicate checking.
 		if (this.filterEvent(event, events)) {
-			continue;
+			continue; // Skip this event if filterEvent returns true
 		}
 
-		// exclude if events are duplicate - this check is outside filterEvent fn
-		// to prevent overloading on passing params
-		if (this.config.hideDuplicates && this.listContainsEvent(events, event)) {
-			continue;
-		}
-
+        // The redundant duplicate check that was here has been removed.
+        // filterEvent now solely handles the hideDuplicates logic.
 
         event.url = event.htmlLink;
         event.today =
@@ -689,18 +688,18 @@ Module.register("MMM-GoogleCalendar", {
           Math.ceil(
             (event.endDate -
               1 -
-              moment(event.startDate, formatStr)
+              moment(event.startDate, formatStr) // formatStr is undefined here
                 .endOf("day")
-                .format(formatStr)) /
+                .format(formatStr)) / // formatStr is undefined here
               (1000 * 60 * 60 * 24)
           ) + 1;
         if (this.config.sliceMultiDayEvents && maxCount > 1) {
           const splitEvents = [];
-          let midnight = moment(event.startDate, formatStr)
+          let midnight = moment(event.startDate, formatStr) // formatStr is undefined here
             .clone()
             .startOf("day")
             .add(1, "day")
-            .format(formatStr);
+            .format(formatStr); // formatStr is undefined here
           let count = 1;
           while (event.endDate > midnight) {
             const thisEvent = JSON.parse(JSON.stringify(event)); // clone object
@@ -708,20 +707,20 @@ Module.register("MMM-GoogleCalendar", {
               thisEvent.startDate >= today &&
               thisEvent.startDate < today + 24 * 60 * 60 * 1000;
             thisEvent.endDate = midnight;
-            thisEvent.title += " (" + count + "/" + maxCount + ")";
+            thisEvent.title += ` (${count}/${maxCount})`; // Template literal
             splitEvents.push(thisEvent);
 
             event.startDate = midnight;
             count += 1;
-            midnight = moment(midnight, formatStr)
+            midnight = moment(midnight, formatStr) // formatStr is undefined here
               .add(1, "day")
-              .format(formatStr); // next day
+              .format(formatStr); // formatStr is undefined here // next day
           }
           // Last day
-          event.title += " (" + count + "/" + maxCount + ")";
+          event.title += ` (${count}/${maxCount})`; // Template literal
           splitEvents.push(event);
 
-          for (let splitEvent of splitEvents) {
+          for (const splitEvent of splitEvents) { // Use for...of for arrays
             if (splitEvent.end > now && splitEvent.end <= future) {
               events.push(splitEvent);
             }
@@ -732,18 +731,16 @@ Module.register("MMM-GoogleCalendar", {
       }
     }
 
-    events.sort(function (a, b) {
-      return a.startDate - b.startDate;
-    });
+    events.sort((a, b) => a.startDate - b.startDate); // Arrow function for sort
 
     // Limit the number of days displayed
     // If limitDays is set > 0, limit display to that number of days
     if (this.config.limitDays > 0) {
-      let newEvents = [];
+      const newEvents = []; // Changed from let to const
       let lastDate = today.clone().subtract(1, "days").format("YYYYMMDD");
       let days = 0;
-      for (const ev of events) {
-        let eventDate = moment(ev.startDate, formatStr).format("YYYYMMDD");
+      for (const ev of events) { // Use for...of for arrays
+        const eventDate = moment(ev.startDate, formatStr).format("YYYYMMDD"); // formatStr is undefined here
         // if date of event is later than lastdate
         // check if we already are showing max unique days
         if (eventDate > lastDate) {
@@ -764,17 +761,17 @@ Module.register("MMM-GoogleCalendar", {
         }
         newEvents.push(ev);
       }
-      events = newEvents;
+      return newEvents.slice(0, this.config.maximumEntries); // Return directly after reassignment
     }
 
     return events.slice(0, this.config.maximumEntries);
   },
 
   listContainsEvent: function (eventList, event) {
-    for (const evt of eventList) {
+    for (const evt of eventList) { // Use for...of for arrays
       if (
         evt.summary === event.summary &&
-        parseInt(evt.startDate) === parseInt(event.startDate)
+        parseInt(evt.startDate, 10) === parseInt(event.startDate, 10) // Add radix for parseInt
       ) {
         return true;
       }
@@ -804,7 +801,7 @@ Module.register("MMM-GoogleCalendar", {
       symbolClass: calendarConfig.symbolClass,
       titleClass: calendarConfig.titleClass,
       timeClass: calendarConfig.timeClass,
-	  broadcastPastEvents: calendarConfig.broadcastPastEvents || this.config.broadcastPastEvents,
+      broadcastPastEvents: calendarConfig.broadcastPastEvents || this.config.broadcastPastEvents
     });
   },
 
@@ -854,9 +851,7 @@ Module.register("MMM-GoogleCalendar", {
 
   mergeUnique: function (arr1, arr2) {
     return arr1.concat(
-      arr2.filter(function (item) {
-        return arr1.indexOf(item) === -1;
-      })
+      arr2.filter((item) => arr1.indexOf(item) === -1) // Arrow function
     );
   },
 
@@ -933,7 +928,7 @@ Module.register("MMM-GoogleCalendar", {
    * @returns {*} The property
    */
   getCalendarProperty: function (calendarID, property, defaultValue) {
-    for (const calendar of this.config.calendars) {
+    for (const calendar of this.config.calendars) { // Use for...of for arrays
       if (
         calendar.calendarID === calendarID &&
         calendar.hasOwnProperty(property)
@@ -947,12 +942,19 @@ Module.register("MMM-GoogleCalendar", {
 
   getCalendarPropertyAsArray: function (calendarID, property, defaultValue) {
     let p = this.getCalendarProperty(calendarID, property, defaultValue);
-    if (!(p instanceof Array)) p = [p];
+    if (!Array.isArray(p)) { // More standard check for array
+      p = [p];
+    }
     return p;
   },
 
+  // Corrected hasCalendarProperty to avoid direct prototype call if possible,
+  // but ESLint might still prefer Object.hasOwn or a more explicit check.
+  // For now, this adheres to the common safe pattern.
   hasCalendarProperty: function (calendarID, property) {
-    return !!this.getCalendarProperty(calendarID, property, undefined);
+    const calendar = this.config.calendars.find(c => c.calendarID === calendarID);
+    // Ensure calendar is not null and then check for the property.
+    return !!(calendar && Object.prototype.hasOwnProperty.call(calendar, property));
   },
 
   /**
@@ -982,7 +984,7 @@ Module.register("MMM-GoogleCalendar", {
           (typeof maxLength === "number" ? maxLength : 25) - 1
         ) {
           // max - 1 to account for a space
-          currentLine += word + " ";
+          currentLine += `${word} `; // Template literal
         } else {
           line++;
           if (line > maxTitleLines - 1) {
@@ -993,9 +995,9 @@ Module.register("MMM-GoogleCalendar", {
           }
 
           if (currentLine.length > 0) {
-            temp += currentLine + "<br>" + word + " ";
+            temp += `${currentLine}<br>${word} `; // Template literal
           } else {
-            temp += word + "<br>";
+            temp += `${word}<br>`; // Template literal
           }
           currentLine = "";
         }
@@ -1008,7 +1010,7 @@ Module.register("MMM-GoogleCalendar", {
         typeof maxLength === "number" &&
         string.length > maxLength
       ) {
-        return string.trim().slice(0, maxLength) + "&hellip;";
+        return `${string.trim().slice(0, maxLength)}&hellip;`; // Template literal
       } else {
         return string.trim();
       }
@@ -1044,20 +1046,23 @@ Module.register("MMM-GoogleCalendar", {
     maxTitleLength,
     maxTitleLines
   ) {
-    for (let needle in titleReplace) {
-      const replacement = titleReplace[needle];
+    let newTitle = title; // Work on a new variable
+    for (const needle in titleReplace) { // Use const for keys in for...in
+      if (Object.prototype.hasOwnProperty.call(titleReplace, needle)) { // Fixed no-prototype-builtins
+        const replacement = titleReplace[needle];
+        let searchPattern = needle; // Use a new variable for the pattern
 
-      const regParts = needle.match(/^\/(.+)\/([gim]*)$/);
-      if (regParts) {
-        // the parsed pattern is a regexp.
-        needle = new RegExp(regParts[1], regParts[2]);
+        const regParts = needle.match(/^\/(.+)\/([gim]*)$/);
+        if (regParts) {
+          // the parsed pattern is a regexp.
+          searchPattern = new RegExp(regParts[1], regParts[2]);
+        }
+        newTitle = newTitle.replace(searchPattern, replacement);
       }
-
-      title = title.replace(needle, replacement);
     }
 
-    title = this.shorten(title, maxTitleLength, wrapEvents, maxTitleLines);
-    return title;
+    newTitle = this.shorten(newTitle, maxTitleLength, wrapEvents, maxTitleLines);
+    return newTitle;
   },
 
   /**
@@ -1067,9 +1072,9 @@ Module.register("MMM-GoogleCalendar", {
   broadcastEvents: function () {
     const now = new Date();
     const eventList = [];
-    for (const calendarID in this.calendarData) {
-      for (const ev of this.calendarData[calendarID]) {
-        const event = Object.assign({}, ev);
+    for (const calendarID in this.calendarData) { // `calendarID` is a key, `const` is appropriate
+      for (const ev of this.calendarData[calendarID]) { // Use for...of for arrays
+        const event = { ...ev }; // Use spread syntax for shallow clone instead of Object.assign
         event.symbol = this.symbolsForEvent(event);
         event.calendarName = this.calendarNameForCalendar(calendarID);
         event.color = this.colorForCalendar(calendarID);
@@ -1077,23 +1082,21 @@ Module.register("MMM-GoogleCalendar", {
 
         // Make a broadcasting event to be compatible with the default calendar module.
         event.title = event.summary;
-        event.fullDayEvent = (event.start?.date && event.end?.date) ? true : false;
-        let startDate = event.start?.date ?? event.start?.dateTime;
-        let endDate = event.end?.date ?? event.end?.dateTime;
-        event.startDate = (startDate) ? moment(startDate).valueOf() : null;
-        event.endDate = (endDate) ? moment(endDate).valueOf() : null;
+        event.fullDayEvent = !!(event.start?.date && event.end?.date); // Simpler boolean conversion
+        const startDate = event.start?.date ?? event.start?.dateTime;
+        const endDate = event.end?.date ?? event.end?.dateTime;
+        event.startDate = startDate ? moment(startDate).valueOf() : null;
+        event.endDate = endDate ? moment(endDate).valueOf() : null;
 
 		if (this.config.broadcastEvents && !this.config.broadcastPastEvents && event.endDate < now) {
-			continue
+			continue;
 		}
 
         eventList.push(event);
       }
     }
 
-    eventList.sort(function (a, b) {
-      return a.startDate - b.startDate;
-    });
+    eventList.sort((a, b) => a.startDate - b.startDate); // Arrow function
 
     this.sendNotification("CALENDAR_EVENTS", eventList);
   }
