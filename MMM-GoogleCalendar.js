@@ -278,7 +278,7 @@ Module.register("MMM-GoogleCalendar", {
         }
         symbols.forEach((s, index) => {
           const symbol = document.createElement("span");
-          symbol.className = "fa fa-fw fa-" + s;
+          symbol.className = this.symbolClassForCalendar(event.calendarID) + s;
           if (index > 0) {
             symbol.style.paddingLeft = "5px";
           }
@@ -1070,8 +1070,8 @@ Module.register("MMM-GoogleCalendar", {
     const eventList = [];
     for (const calendarID in this.calendarData) {
       for (const ev of this.calendarData[calendarID]) {
-        const event = Object.assign({}, ev);
-        event.symbol = this.symbolsForEvent(event);
+        const event = Object.assign({calendarID:calendarID}, ev);
+        event.symbol = (this.symbolsForEvent(event) || []).map(s => this.symbolClassForCalendar(calendarID) + s);
         event.calendarName = this.calendarNameForCalendar(calendarID);
         event.color = this.colorForCalendar(calendarID);
         delete event.calendarID;
