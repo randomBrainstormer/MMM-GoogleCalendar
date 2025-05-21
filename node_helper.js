@@ -27,7 +27,6 @@ module.exports = NodeHelper.create({
     if (notification === "MODULE_READY") {
       if (!this.calendarService) {
         if (payload.queryParams) {
-          // if payload is sent, user has authenticated
           const params = new URLSearchParams(payload.queryParams);
           this.authenticateWithQueryParams(params);
         } else {
@@ -51,36 +50,48 @@ module.exports = NodeHelper.create({
   authenticateWithQueryParams: function (params) {
     const error = params.get("error");
     if (error) {
-      // OAuth standard errors like 'access_denied' are passed through.
       this.sendSocketNotification("AUTH_FAILED", { error_type: error });
       return;
     }
 
-    const _this = this; 
+    const _this = this;
     const code = params.get("code");
 
-    fs.readFile(path.join(_this.path, CREDENTIALS_FILE_NAME), (err, content) => {
-      if (err) {
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_LOADING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error loading client secret file:`, err);
-      }
+    fs.readFile(
+      path.join(_this.path, CREDENTIALS_FILE_NAME),
+      (err, content) => {
+        if (err) {
+          _this.sendSocketNotification("AUTH_FAILED", {
+            error_type: "ERROR_LOADING_CREDENTIALS"
+          });
+          return console.error(
+            `${_this.name}: Error loading client secret file:`,
+            err
+          );
+        }
 
-      let parsedCredentials;
-      try {
-        parsedCredentials = JSON.parse(content);
-      } catch (parseError) {
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_PARSING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error parsing client secret file:`, parseError);
-      }
+        let parsedCredentials;
+        try {
+          parsedCredentials = JSON.parse(content);
+        } catch (parseError) {
+          _this.sendSocketNotification("AUTH_FAILED", {
+            error_type: "ERROR_PARSING_CREDENTIALS"
+          });
+          return console.error(
+            `${_this.name}: Error parsing client secret file:`,
+            parseError
+          );
+        }
 
-      // Authorize a client with credentials, then call the Google Tasks API.
-      _this.authenticateWeb(
-        _this, 
-        code,
-        parsedCredentials,
-        _this.startCalendarService
-      );
-    });
+        // Authorize a client with credentials, then call the Google Tasks API.
+        _this.authenticateWeb(
+          _this,
+          code,
+          parsedCredentials,
+          _this.startCalendarService
+        );
+      }
+    );
   },
 
   // replaces the old authenticate method
@@ -105,48 +116,75 @@ module.exports = NodeHelper.create({
     _this.oAuth2Client.getToken(code, (err, token) => {
       if (err) {
         console.error(`${_this.name}: Error retrieving access token`, err);
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_TOKEN_EXCHANGE" });
+        _this.sendSocketNotification("AUTH_FAILED", {
+          error_type: "ERROR_TOKEN_EXCHANGE"
+        });
         return;
       }
       _this.oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
-      fs.writeFile(path.join(_this.path, TOKEN_FILE_NAME), JSON.stringify(token), (writeFileErr) => {
-        if (writeFileErr) {
-          // Log the error, but don't send AUTH_FAILED here as the token was successfully retrieved.
-          // The module might still function for this session.
-          return console.error(`${_this.name}: Error writing token file:`, writeFileErr);
+      fs.writeFile(
+        path.join(_this.path, TOKEN_FILE_NAME),
+        JSON.stringify(token),
+        (writeFileErr) => {
+          if (writeFileErr) {
+            // Log the error, but don't send AUTH_FAILED here as the token was successfully retrieved.
+            return console.error(
+              `${_this.name}: Error writing token file:`,
+              writeFileErr
+            );
+          }
+          console.log(
+            `${_this.name}: Token stored to`,
+            path.join(_this.path, TOKEN_FILE_NAME)
+          );
         }
-        console.log(`${_this.name}: Token stored to`, path.join(_this.path, TOKEN_FILE_NAME));
-      });
+      );
       callback(_this.oAuth2Client, _this);
     });
   },
 
   // Authenticate oAuth credentials
   authenticate: function () {
-    const _this = this; // Use const for _this
+    const _this = this;
 
-    fs.readFile(path.join(_this.path, CREDENTIALS_FILE_NAME), (err, content) => {
-      if (err) {
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_LOADING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error loading client secret file:`, err); // Template literal
+    fs.readFile(
+      path.join(_this.path, CREDENTIALS_FILE_NAME),
+      (err, content) => {
+        if (err) {
+          _this.sendSocketNotification("AUTH_FAILED", {
+            error_type: "ERROR_LOADING_CREDENTIALS"
+          });
+          return console.error(
+            `${_this.name}: Error loading client secret file:`,
+            err
+          );
+        }
+        let parsedCredentials;
+        try {
+          parsedCredentials = JSON.parse(content);
+        } catch (parseError) {
+          _this.sendSocketNotification("AUTH_FAILED", {
+            error_type: "ERROR_PARSING_CREDENTIALS"
+          });
+          return console.error(
+            `${_this.name}: Error parsing client secret file:`,
+            parseError
+          );
+        }
+        authorize(parsedCredentials, _this.startCalendarService);
       }
-      let parsedCredentials;
-      try {
-        parsedCredentials = JSON.parse(content);
-      } catch (parseError) {
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_PARSING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error parsing client secret file:`, parseError); // Template literal
-      }
-      // Authorize a client with credentials, then call the Google Tasks API.
-      authorize(parsedCredentials, _this.startCalendarService); // _this is implicitly captured by authorize
-    });
+    );
 
     function authorize(credentials, callback) {
       if (!credentials.web) {
-        _this.sendSocketNotification("AUTH_FAILED", { error_type: "INVALID_CREDENTIALS_TYPE" });
-        console.error(`${_this.name}: credentials.json does not contain 'web' key. Please use 'Desktop application' credentials.`); // Template literal
-        return; // Stop further processing
+        _this.sendSocketNotification("AUTH_FAILED", {
+          error_type: "INVALID_CREDENTIALS_TYPE"
+        });
+        console.error(
+          `${_this.name}: credentials.json does not contain 'web' key. Please use 'Desktop application' credentials.`
+        );
+        return;
       }
       const creds = credentials.web;
       const credentialType = "web"; // Hardcoded as we only support web now
@@ -155,7 +193,7 @@ module.exports = NodeHelper.create({
 
       if (!client_secret || !client_id) {
         _this.sendSocketNotification("AUTH_FAILED", {
-          error_type: "WRONG_CREDENTIALS_FORMAT" // This key is still relevant here
+          error_type: "WRONG_CREDENTIALS_FORMAT"
         });
         return;
       }
@@ -173,7 +211,6 @@ module.exports = NodeHelper.create({
             ? redirect_uris[0]
             : `http://localhost:8080`;
 
-          // alert auth is needed
           _this.sendSocketNotification("AUTH_NEEDED", {
             url: `https://accounts.google.com/o/oauth2/v2/auth?${encodeQueryData(
               {
@@ -189,7 +226,8 @@ module.exports = NodeHelper.create({
             credentialType // Should be "web" now
           });
 
-          return console.log( // Keep this log for server-side info
+          return console.log(
+            // Keep this log for server-side info
             `${_this.name}: Error loading token:`,
             err,
             "Make sure you have authorized the app."
@@ -206,11 +244,11 @@ module.exports = NodeHelper.create({
    * @param {object} request - The request object, expected to contain response.data.error
    * @returns {string | undefined} The error code in uppercase or undefined.
    */
-  checkForHTTPError: function (request) { // request is an object, let is fine
+  checkForHTTPError: function (request) {
     return request?.response?.data?.error?.toUpperCase();
   },
 
-  startCalendarService: function (auth, _this) { // auth and _this are parameters
+  startCalendarService: function (auth, _this) {
     _this.calendarService = google.calendar({ version: "v3", auth });
     _this.sendSocketNotification("SERVICE_READY", {});
   },
@@ -231,7 +269,6 @@ module.exports = NodeHelper.create({
     pastDaysCount,
     identifier
   ) {
-    // `this` here refers to the helper instance, which is correct.
     this.calendarService.events.list(
       {
         calendarId: calendarID,
@@ -242,10 +279,11 @@ module.exports = NodeHelper.create({
         singleEvents: true,
         orderBy: "startTime"
       },
-      (err, res) => { // Arrow function for callback
+      (err, res) => {
+        // Arrow function for callback
         if (err) {
           Log.error(
-            `${this.name} Error. Could not fetch calendar: `, // Template literal
+            `${this.name} Error. Could not fetch calendar: `,
             calendarID,
             formatError(err)
           );
@@ -286,10 +324,11 @@ module.exports = NodeHelper.create({
     pastDaysCount,
     identifier
   ) {
-    // `this` refers to the helper instance.
     if (this.isHelperActive) {
-      setTimeout(() => { // Arrow function for setTimeout callback
-        this.fetchCalendar( // `this` inside arrow function correctly refers to helper instance
+      setTimeout(() => {
+        // Arrow function for setTimeout callback
+        this.fetchCalendar(
+          // `this` inside arrow function correctly refers to helper instance
           calendarID,
           fetchInterval,
           maximumEntries,
@@ -300,7 +339,8 @@ module.exports = NodeHelper.create({
     }
   },
 
-  broadcastEvents: function (events, identifier, calendarID) { // parameters, let/const not applicable
+  broadcastEvents: function (events, identifier, calendarID) {
+    // parameters, let/const not applicable
     this.sendSocketNotification("CALENDAR_EVENTS", {
       id: identifier,
       calendarID,

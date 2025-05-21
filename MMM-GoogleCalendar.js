@@ -633,9 +633,10 @@ Module.register("MMM-GoogleCalendar", {
   extractCalendarDate: function (googleDate) {
     // case is "all day event"
     if (Object.prototype.hasOwnProperty.call(googleDate, "date")) { // Fixed no-prototype-builtins
-      return moment(googleDate.date).valueOf();
+      // For "YYYY-MM-DD", append time and use moment to parse as local time.
+      return moment(googleDate.date + "T00:00:00").valueOf();
     }
-
+    // For dateTime, moment parses it correctly including timezone.
     return moment(googleDate.dateTime).valueOf();
   },
 
@@ -1082,15 +1083,23 @@ Module.register("MMM-GoogleCalendar", {
 
         // Make a broadcasting event to be compatible with the default calendar module.
         event.title = event.summary;
-        event.fullDayEvent = !!(event.start?.date && event.end?.date); // Simpler boolean conversion
-        const startDate = event.start?.date ?? event.start?.dateTime;
-        const endDate = event.end?.date ?? event.end?.dateTime;
-        event.startDate = startDate ? moment(startDate).valueOf() : null;
-        event.endDate = endDate ? moment(endDate).valueOf() : null;
 
-		if (this.config.broadcastEvents && !this.config.broadcastPastEvents && event.endDate < now) {
-			continue;
-		}
+        event.fullDayEvent = !!(event.start?.date && event.end?.date);
+
+        if (event.fullDayEvent) {
+          // For all-day events, we ensure startDate is local midnight of the start day
+          event.startDate = event.start?.date ? moment(event.start.date + "T00:00:00").valueOf() : null;
+          // Ensure endDate is local midnight of the day *after* the end day (exclusive end)
+          event.endDate = event.end?.date ? moment(event.end.date + "T00:00:00").valueOf() : null;
+        } else {
+          // For timed events, moment parses ISO8601 strings correctly with timezone
+          event.startDate = event.start?.dateTime ? moment(event.start.dateTime).valueOf() : null;
+          event.endDate = event.end?.dateTime ? moment(event.end.dateTime).valueOf() : null;
+        }
+
+        if (this.config.broadcastEvents && !this.config.broadcastPastEvents && event.endDate < now) {
+          continue;
+        }
 
         eventList.push(event);
       }
