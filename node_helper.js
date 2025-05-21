@@ -2,11 +2,11 @@ const NodeHelper = require("node_helper");
 const { google } = require("googleapis");
 const { encodeQueryData, formatError } = require("./helpers");
 const fs = require("fs");
-const path = require("path"); // Added path module
+const path = require("path");
 const Log = require("logger");
 
-const TOKEN_FILE_NAME = "token.json"; // Defined constant
-const CREDENTIALS_FILE_NAME = "credentials.json"; // Defined constant
+const TOKEN_FILE_NAME = "token.json";
+const CREDENTIALS_FILE_NAME = "credentials.json";
 
 module.exports = NodeHelper.create({
   // Override start method.
@@ -52,18 +52,17 @@ module.exports = NodeHelper.create({
     const error = params.get("error");
     if (error) {
       // OAuth standard errors like 'access_denied' are passed through.
-      // Consider if specific translation is needed for these on the front-end.
       this.sendSocketNotification("AUTH_FAILED", { error_type: error });
       return;
     }
 
-    const _this = this; // Use const for _this
+    const _this = this; 
     const code = params.get("code");
 
     fs.readFile(path.join(_this.path, CREDENTIALS_FILE_NAME), (err, content) => {
       if (err) {
         _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_LOADING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error loading client secret file:`, err); // Template literal
+        return console.error(`${_this.name}: Error loading client secret file:`, err);
       }
 
       let parsedCredentials;
@@ -71,12 +70,12 @@ module.exports = NodeHelper.create({
         parsedCredentials = JSON.parse(content);
       } catch (parseError) {
         _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_PARSING_CREDENTIALS" });
-        return console.error(`${_this.name}: Error parsing client secret file:`, parseError); // Template literal
+        return console.error(`${_this.name}: Error parsing client secret file:`, parseError);
       }
 
       // Authorize a client with credentials, then call the Google Tasks API.
       _this.authenticateWeb(
-        _this, // _this is still needed here due to the way it's passed around
+        _this, 
         code,
         parsedCredentials,
         _this.startCalendarService
@@ -92,7 +91,7 @@ module.exports = NodeHelper.create({
 
     if (!client_secret || !client_id) {
       _this.sendSocketNotification("AUTH_FAILED", {
-        error_type: "WRONG_CREDENTIALS_FORMAT" // This key is still relevant here
+        error_type: "WRONG_CREDENTIALS_FORMAT"
       });
       return;
     }
@@ -105,7 +104,7 @@ module.exports = NodeHelper.create({
 
     _this.oAuth2Client.getToken(code, (err, token) => {
       if (err) {
-        console.error(`${_this.name}: Error retrieving access token`, err); // Template literal
+        console.error(`${_this.name}: Error retrieving access token`, err);
         _this.sendSocketNotification("AUTH_FAILED", { error_type: "ERROR_TOKEN_EXCHANGE" });
         return;
       }
@@ -115,9 +114,9 @@ module.exports = NodeHelper.create({
         if (writeFileErr) {
           // Log the error, but don't send AUTH_FAILED here as the token was successfully retrieved.
           // The module might still function for this session.
-          return console.error(`${_this.name}: Error writing token file:`, writeFileErr); // Template literal
+          return console.error(`${_this.name}: Error writing token file:`, writeFileErr);
         }
-        console.log(`${_this.name}: Token stored to`, path.join(_this.path, TOKEN_FILE_NAME)); // Template literal
+        console.log(`${_this.name}: Token stored to`, path.join(_this.path, TOKEN_FILE_NAME));
       });
       callback(_this.oAuth2Client, _this);
     });
@@ -143,9 +142,6 @@ module.exports = NodeHelper.create({
       authorize(parsedCredentials, _this.startCalendarService); // _this is implicitly captured by authorize
     });
 
-    // Inner function `authorize` still uses `_this` from the outer scope.
-    // This is a common pattern for helper functions within methods.
-    // It can be left as is or refactored if desired, but `_this` here refers to the helper instance.
     function authorize(credentials, callback) {
       if (!credentials.web) {
         _this.sendSocketNotification("AUTH_FAILED", { error_type: "INVALID_CREDENTIALS_TYPE" });
@@ -185,7 +181,7 @@ module.exports = NodeHelper.create({
                 access_type: "offline",
                 include_granted_scopes: true,
                 response_type: "code",
-                state: _this.name, // state can be module name or other identifier
+                state: _this.name,
                 redirect_uri,
                 client_id
               }
@@ -194,7 +190,7 @@ module.exports = NodeHelper.create({
           });
 
           return console.log( // Keep this log for server-side info
-            `${_this.name}: Error loading token:`, // Template literal
+            `${_this.name}: Error loading token:`,
             err,
             "Make sure you have authorized the app."
           );
