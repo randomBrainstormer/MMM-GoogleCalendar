@@ -97,8 +97,17 @@ module.exports = NodeHelper.create({
   // replaces the old authenticate method
   authenticateWeb: function (_this, code, credentials, callback) {
     // This function now assumes `credentials` is the full parsed object
-    // and the caller has ensured `credentials.web` exists.
-    const { client_secret, client_id, redirect_uris } = credentials.web;
+    // and the caller has ensured `credentials.installed` exists.
+    if (!credentials.installed) {
+      _this.sendSocketNotification("AUTH_FAILED", {
+        error_type: "INVALID_CREDENTIALS_TYPE" // Or a new more specific error
+      });
+      console.error(
+        `${_this.name}: credentials.json does not contain 'installed' key. Please use 'Desktop application' credentials.`
+      );
+      return;
+    }
+    const { client_secret, client_id, redirect_uris } = credentials.installed;
 
     if (!client_secret || !client_id) {
       _this.sendSocketNotification("AUTH_FAILED", {
@@ -177,17 +186,17 @@ module.exports = NodeHelper.create({
     );
 
     function authorize(credentials, callback) {
-      if (!credentials.web) {
+      if (!credentials.installed) {
         _this.sendSocketNotification("AUTH_FAILED", {
           error_type: "INVALID_CREDENTIALS_TYPE"
         });
         console.error(
-          `${_this.name}: credentials.json does not contain 'web' key. Please use 'Desktop application' credentials.`
+          `${_this.name}: credentials.json does not contain 'installed' key. Please use 'Desktop application' credentials.`
         );
         return;
       }
-      const creds = credentials.web;
-      const credentialType = "web"; // Hardcoded as we only support web now
+      const creds = credentials.installed;
+      const credentialType = "installed"; // Hardcoded as we only support web now
 
       const { client_secret, client_id, redirect_uris } = creds;
 
