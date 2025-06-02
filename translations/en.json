@@ -1,9 +1,9 @@
 {
   "_COMMENT_TRANSLATORS": "To contribute translations, copy this file, translate the values, and add it to the module's `getTranslations` function in MMM-GoogleCalendar.js with the appropriate language code.",
-  "WRONG_CREDENTIALS_FORMAT": "Wrong Credentials. An error occurred while reading the credentials.json file, please check you're using the correct credential type (client_id or client_secret might be missing from your web credentials).",
+  "WRONG_CREDENTIALS_FORMAT": "Wrong Credentials. An error occurred while reading the credentials.json file, please check you're using the correct credential type (client_id or client_secret might be missing from your installed credentials).",
   "AUTH_ERROR_GENERIC": "Authentication is required. Please check module configuration.",
   "AUTH_PROMPT_CLICK_HERE": "Please <a href=\"{authUrl}\">click here</a> to authorize this module.",
-  "INVALID_CREDENTIALS_TYPE": "Invalid credentials.json format. Please ensure you are using 'Desktop application' credentials as per the setup guide (missing 'web' key).",
+  "INVALID_CREDENTIALS_TYPE": "Invalid credentials.json format. Please ensure you are using 'Desktop application' credentials as per the setup guide (missing 'installed' key).",
   "ERROR_TOKEN_EXCHANGE": "Failed to exchange authorization code for token. Please try authorizing again or check server logs.",
   "ERROR_LOADING_CREDENTIALS": "Error loading credentials.json. Ensure the file exists in the module directory and has correct permissions.",
   "ERROR_PARSING_CREDENTIALS": "Error parsing credentials.json. Please ensure the file is valid JSON."
