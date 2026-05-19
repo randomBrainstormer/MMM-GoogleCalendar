@@ -42,6 +42,7 @@ module.exports = NodeHelper.create({
         payload.fetchInterval,
         payload.maximumEntries,
         payload.pastDaysCount,
+        payload.maximumNumberOfDays,
         payload.id
       );
     }
@@ -269,6 +270,7 @@ module.exports = NodeHelper.create({
    * @param {number} fetchInterval How often does the calendar needs to be fetched in ms
    * @param {number} maximumEntries The maximum number of events fetched.
    * @param {number} pastDaysCount Number of past days to fetch events from.
+   * @param {number} maximumNumberOfDays Number of future days to fetch events into.
    * @param {string} identifier ID of the module
    */
   fetchCalendar: function (
@@ -276,6 +278,7 @@ module.exports = NodeHelper.create({
     fetchInterval,
     maximumEntries,
     pastDaysCount,
+    maximumNumberOfDays = 365,
     identifier
   ) {
     this.calendarService.events.list(
@@ -283,6 +286,9 @@ module.exports = NodeHelper.create({
         calendarId: calendarID,
         timeMin: new Date(
           new Date().setDate(new Date().getDate() - pastDaysCount)
+        ).toISOString(),
+        timeMax: new Date(
+          new Date().setDate(new Date().getDate() + maximumNumberOfDays)
         ).toISOString(),
         maxResults: maximumEntries,
         singleEvents: true,
@@ -320,6 +326,7 @@ module.exports = NodeHelper.create({
           fetchInterval,
           maximumEntries,
           pastDaysCount,
+          maximumNumberOfDays,
           identifier
         );
       }
@@ -331,6 +338,7 @@ module.exports = NodeHelper.create({
     fetchInterval,
     maximumEntries,
     pastDaysCount,
+    maximumNumberOfDays,
     identifier
   ) {
     if (this.isHelperActive) {
@@ -342,6 +350,7 @@ module.exports = NodeHelper.create({
           fetchInterval,
           maximumEntries,
           pastDaysCount,
+          maximumNumberOfDays,
           identifier
         );
       }, fetchInterval);
