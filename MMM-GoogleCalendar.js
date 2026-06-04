@@ -1076,6 +1076,7 @@ Module.register("MMM-GoogleCalendar", {
     for (const calendarID in this.calendarData) { // `calendarID` is a key, `const` is appropriate
       for (const ev of this.calendarData[calendarID]) { // Use for...of for arrays
         const event = { ...ev }; // Use spread syntax for shallow clone instead of Object.assign
+        event.calendarID = calendarID;
         event.symbol = this.symbolsForEvent(event);
         event.calendarName = this.calendarNameForCalendar(calendarID);
         event.color = this.colorForCalendar(calendarID);
