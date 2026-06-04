@@ -680,7 +680,7 @@ Module.register("MMM-GoogleCalendar", {
         event.today =
           event.startDate >= today &&
           event.startDate < today + 24 * 60 * 60 * 1000;
-        event.title = event.summary;
+        event.title = event.summary === undefined ? this.translate("PRIVATE_EVENT") : event.summary;
 
         /* if sliceMultiDayEvents is set to true, multiday events (events exceeding at least one midnight) are sliced into days,
          * otherwise, esp. in dateheaders mode it is not clear how long these events are.

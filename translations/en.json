@@ -6,5 +6,6 @@
   "INVALID_CREDENTIALS_TYPE": "Invalid credentials.json format. Please ensure you are using 'Desktop application' credentials as per the setup guide (missing 'installed' key).",
   "ERROR_TOKEN_EXCHANGE": "Failed to exchange authorization code for token. Please try authorizing again or check server logs.",
   "ERROR_LOADING_CREDENTIALS": "Error loading credentials.json. Ensure the file exists in the module directory and has correct permissions.",
-  "ERROR_PARSING_CREDENTIALS": "Error parsing credentials.json. Please ensure the file is valid JSON."
+  "ERROR_PARSING_CREDENTIALS": "Error parsing credentials.json. Please ensure the file is valid JSON.",
+  "PRIVATE_EVENT": "Private Event"
 }
