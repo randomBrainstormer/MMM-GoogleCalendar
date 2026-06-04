@@ -1083,7 +1083,7 @@ Module.register("MMM-GoogleCalendar", {
         delete event.calendarID;
 
         // Make a broadcasting event to be compatible with the default calendar module.
-        event.title = event.summary;
+        event.title = event.summary === undefined ? this.translate("PRIVATE_EVENT") : event.summary;
 
         event.fullDayEvent = !!(event.start?.date && event.end?.date);
 
