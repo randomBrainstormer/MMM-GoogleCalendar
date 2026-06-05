@@ -132,6 +132,17 @@ module.exports = NodeHelper.create({
         return;
       }
       _this.oAuth2Client.setCredentials(token);
+      _this.oAuth2Client.on("tokens", (newTokens) => {
+        fs.readFile(path.join(_this.path, TOKEN_FILE_NAME), (readErr, content) => {
+          if (readErr) return;
+          try {
+            const merged = { ...JSON.parse(content), ...newTokens };
+            fs.writeFile(path.join(_this.path, TOKEN_FILE_NAME), JSON.stringify(merged), () => {});
+          } catch (e) {
+            Log.error(`${_this.name}: Error persisting refreshed token`, e);
+          }
+        });
+      });
       // Store the token to disk for later program executions
       fs.writeFile(
         path.join(_this.path, TOKEN_FILE_NAME),
@@ -244,6 +255,17 @@ module.exports = NodeHelper.create({
           );
         }
         _this.oAuth2Client.setCredentials(JSON.parse(token));
+        _this.oAuth2Client.on("tokens", (newTokens) => {
+          fs.readFile(path.join(_this.path, TOKEN_FILE_NAME), (readErr, content) => {
+            if (readErr) return;
+            try {
+              const merged = { ...JSON.parse(content), ...newTokens };
+              fs.writeFile(path.join(_this.path, TOKEN_FILE_NAME), JSON.stringify(merged), () => {});
+            } catch (e) {
+              Log.error(`${_this.name}: Error persisting refreshed token`, e);
+            }
+          });
+        });
         callback(_this.oAuth2Client, _this);
       });
     }
@@ -281,6 +303,8 @@ module.exports = NodeHelper.create({
     maximumNumberOfDays = 365,
     identifier
   ) {
+    if (!this.calendarService) return;
+
     this.calendarService.events.list(
       {
         calendarId: calendarID,
@@ -302,15 +326,27 @@ module.exports = NodeHelper.create({
             calendarID,
             formatError(err)
           );
-          let errorType = NodeHelper.checkFetchError(err); // Use let for reassigned variable
+          let errorType = NodeHelper.checkFetchError(err);
           if (errorType === "MODULE_ERROR_UNSPECIFIED") {
             errorType = this.checkForHTTPError(err) || errorType;
+          }
+
+          if (
+            errorType === "INVALID_GRANT" ||
+            err?.response?.status === 401 ||
+            err?.message?.toLowerCase().includes("invalid_grant")
+          ) {
+            Log.warn(`${this.name}: Token invalid or revoked, clearing token and requesting re-auth`);
+            this.calendarService = null;
+            fs.unlink(path.join(this.path, TOKEN_FILE_NAME), () => {});
+            this.authenticate();
+            return;
           }
 
           // send error to module
           this.sendSocketNotification("CALENDAR_ERROR", {
             id: identifier,
-            error_type: errorType // Ensure consistency in property name
+            error_type: errorType
           });
         } else {
           const events = res.data.items;
