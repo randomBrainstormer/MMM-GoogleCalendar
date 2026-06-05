@@ -431,7 +431,15 @@ Module.register("MMM-GoogleCalendar", {
           }
         } else {
           // Show relative times
-          if (event.startDate >= now) {
+          if (event.fullDayEvent) {
+            // All-day events (e.g. holidays) have no meaningful time of day,
+            // so "at 12:00 AM", "in 5 hours" or "Running" is misleading.
+            // Show a date-only label instead: Today / Tomorrow / weekday /
+            // date. (issue #85)
+            timeWrapper.innerHTML = this.fullDayEventRelativeLabel(
+              event.startDate
+            );
+          } else if (event.startDate >= now) {
             // Use relative  time
             if (!this.config.hideTime) {
               timeWrapper.innerHTML = this.capFirst(
@@ -1093,6 +1101,30 @@ Module.register("MMM-GoogleCalendar", {
    */
   capFirst: function (string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
+  },
+
+  /**
+   * Builds a date-only relative label for an all-day event (no time of day):
+   * Today / Tomorrow / weekday / configured date format. Used so holidays and
+   * other all-day events don't show misleading times such as "in 5 hours" or
+   * "Running" (issue #85).
+   *
+   * Relies only on existing infrastructure: TODAY/TOMORROW are MagicMirror
+   * core translation keys, and moment is locale-aware, so this works in every
+   * supported language without adding translation strings.
+   *
+   * @param {number} startDate The event start timestamp.
+   * @returns {string} The capitalized relative label.
+   */
+  fullDayEventRelativeLabel: function (startDate) {
+    return this.capFirst(
+      moment(startDate).calendar(null, {
+        sameDay: `[${this.translate("TODAY")}]`,
+        nextDay: `[${this.translate("TOMORROW")}]`,
+        nextWeek: "dddd",
+        sameElse: this.config.dateFormat
+      })
+    );
   },
 
   /**
