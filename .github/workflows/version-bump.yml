@@ -1,0 +1,55 @@
+name: Auto version bump
+
+# Bumps the package version once, on main, after a PR is merged.
+# Doing it here (instead of in each feature branch) avoids version
+# collisions between PRs developed in parallel.
+#
+# Default bump is "patch". To bump minor or major, add a label named
+# "minor" or "major" to the PR before merging.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    # Only run for real merges, and never react to the bot's own bump commit.
+    if: >
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.title, 'chore: bump version')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Determine bump level from PR labels
+        id: level
+        run: |
+          if   ${{ contains(github.event.pull_request.labels.*.name, 'major') }}; then
+            echo "level=major" >> "$GITHUB_OUTPUT"
+          elif ${{ contains(github.event.pull_request.labels.*.name, 'minor') }}; then
+            echo "level=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "level=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version, commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # npm version updates package.json + package-lock.json, commits, and tags.
+          # [skip ci] keeps the resulting push from re-triggering workflows.
+          npm version ${{ steps.level.outputs.level }} \
+            -m "chore: bump version to %s [skip ci]"
+          git push origin main --follow-tags
