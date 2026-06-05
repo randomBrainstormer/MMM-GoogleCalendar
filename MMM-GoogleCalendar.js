@@ -525,7 +525,7 @@ Module.register("MMM-GoogleCalendar", {
     // if those are common, as it avoids the listContainsEvent check for duplicates.
 
     // Filter based on `excludedEvents` config
-  if (this.config.excludedEvents?.length && this.config.excludedEvents.includes(event.summary)) {
+  if (this.config.excludedEvents?.length && this.isEventExcluded(event.summary)) {
     Log.debug(`Event ${event.id} ('${event.summary}') filtered due to excludedEvents settings.`);
     return true;
   }
@@ -550,6 +550,54 @@ Module.register("MMM-GoogleCalendar", {
   }
 
   return false; // Event should not be filtered out
+  },
+
+  /**
+   * Determines whether an event title matches any `excludedEvents` filter.
+   *
+   * Mirrors the default MagicMirror calendar module: each entry may be a plain
+   * string (case-insensitive substring match) or an object
+   * `{ filterBy, caseSensitive, regex }`. Previously this used an exact,
+   * case-sensitive full-title equality check, so partial filters such as
+   * "Birthday" never matched "John's Birthday" (issue #55).
+   *
+   * @param {string} title The event summary/title to test.
+   * @returns {boolean} True if the title matches an exclusion filter.
+   */
+  isEventExcluded: function (title) {
+    if (typeof title !== "string") {
+      return false;
+    }
+
+    for (const filter of this.config.excludedEvents) {
+      let pattern = filter;
+      let caseSensitive = false;
+      let useRegex = false;
+
+      if (filter && typeof filter === "object") {
+        pattern = filter.filterBy;
+        caseSensitive = !!filter.caseSensitive;
+        useRegex = !!filter.regex;
+      }
+
+      if (typeof pattern !== "string" || pattern === "") {
+        continue;
+      }
+
+      if (useRegex) {
+        if (new RegExp(pattern, caseSensitive ? "" : "i").test(title)) {
+          return true;
+        }
+      } else if (caseSensitive) {
+        if (title.includes(pattern)) {
+          return true;
+        }
+      } else if (title.toLowerCase().includes(pattern.toLowerCase())) {
+        return true;
+      }
+    }
+
+    return false;
   },
 
   fetchCalendars: function () {
