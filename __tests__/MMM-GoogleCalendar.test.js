@@ -156,5 +156,22 @@ describe('MMM-GoogleCalendar', () => {
     });
   });
 
+  describe('fullDayEventRelativeLabel', () => {
+    test('builds a date-only label from core TODAY/TOMORROW keys, no time (issue #85)', () => {
+      GCal.translate = jest.fn((key) => key);
+      GCal.config.dateFormat = 'MMM Do';
+
+      const label = GCal.fullDayEventRelativeLabel(0);
+
+      // Returns a non-empty capitalized string (moment is mocked).
+      expect(typeof label).toBe('string');
+      expect(label.length).toBeGreaterThan(0);
+
+      // Uses date-only relative keys (no "at LT" time component).
+      expect(GCal.translate).toHaveBeenCalledWith('TODAY');
+      expect(GCal.translate).toHaveBeenCalledWith('TOMORROW');
+    });
+  });
+
   // Add more describe blocks for other pure functions if identified
 });
