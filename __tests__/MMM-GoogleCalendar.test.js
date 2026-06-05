@@ -116,5 +116,45 @@ describe('MMM-GoogleCalendar', () => {
     });
   });
 
+  describe('isEventExcluded', () => {
+    test('matches a case-insensitive substring (issue #55)', () => {
+      GCal.config.excludedEvents = ['Birthday'];
+      expect(GCal.isEventExcluded("John's Birthday")).toBe(true);
+      expect(GCal.isEventExcluded('my birthday party')).toBe(true);
+    });
+
+    test('does not match unrelated titles', () => {
+      GCal.config.excludedEvents = ['Birthday'];
+      expect(GCal.isEventExcluded('Team standup')).toBe(false);
+    });
+
+    test('still matches an exact full title (backwards compatible)', () => {
+      GCal.config.excludedEvents = ['Lunch'];
+      expect(GCal.isEventExcluded('Lunch')).toBe(true);
+    });
+
+    test('object form with caseSensitive only matches exact case', () => {
+      GCal.config.excludedEvents = [{ filterBy: 'Standup', caseSensitive: true }];
+      expect(GCal.isEventExcluded('Daily Standup')).toBe(true);
+      expect(GCal.isEventExcluded('daily standup')).toBe(false);
+    });
+
+    test('object form with regex matches a pattern', () => {
+      GCal.config.excludedEvents = [{ filterBy: '^\\[private\\]', regex: true }];
+      expect(GCal.isEventExcluded('[private] dentist')).toBe(true);
+      expect(GCal.isEventExcluded('not [private]')).toBe(false);
+    });
+
+    test('returns false for a private event with no summary', () => {
+      GCal.config.excludedEvents = ['Birthday'];
+      expect(GCal.isEventExcluded(undefined)).toBe(false);
+    });
+
+    test('ignores empty/invalid filter entries', () => {
+      GCal.config.excludedEvents = ['', { filterBy: '' }, {}];
+      expect(GCal.isEventExcluded('anything')).toBe(false);
+    });
+  });
+
   // Add more describe blocks for other pure functions if identified
 });
