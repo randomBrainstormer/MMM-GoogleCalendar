@@ -631,6 +631,13 @@ Module.register("MMM-GoogleCalendar", {
    * @returns {number} timestamp (type annotation)
    */
   extractCalendarDate: function (googleDate) {
+    // Guard against events without a start/end object (e.g. cancelled
+    // recurring instances or certain private/busy events). Returning null
+    // here prevents a single malformed event from throwing and aborting the
+    // rendering of every other event (see issue #27).
+    if (!googleDate || typeof googleDate !== "object") {
+      return null;
+    }
     // case is "all day event"
     if (Object.prototype.hasOwnProperty.call(googleDate, "date")) { // Fixed no-prototype-builtins
       // For "YYYY-MM-DD", append time and use moment to parse as local time.
@@ -660,6 +667,18 @@ Module.register("MMM-GoogleCalendar", {
       const calendar = this.calendarData[calendarID];
       for (const e in calendar) { // Consider using for...of if calendar is an array or iterating its keys differently
         const event = JSON.parse(JSON.stringify(calendar[e])); // clone object
+
+        // Skip events that have no start/end (e.g. cancelled recurring
+        // instances or some private/busy events). These can't be placed on
+        // the timeline and previously caused the whole render to abort,
+        // making unrelated events/calendars silently disappear (issue #27).
+        if (!event.start || !event.end) {
+          Log.debug(
+            `${this.name}: Skipping event without start/end`,
+            event.id
+          );
+          continue;
+        }
 
         // added props
         event.calendarID = calendarID;

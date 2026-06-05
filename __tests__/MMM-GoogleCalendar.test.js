@@ -19,8 +19,11 @@ global.Log = {
 global.moment = jest.fn(() => ({
   updateLocale: jest.fn(),
   startOf: jest.fn().mockReturnThis(),
+  endOf: jest.fn().mockReturnThis(),
+  clone: jest.fn().mockReturnThis(),
   add: jest.fn().mockReturnThis(),
   subtract: jest.fn().mockReturnThis(),
+  toDate: jest.fn().mockReturnValue(new Date(0)),
   format: jest.fn().mockReturnValue("mocked_date"),
   valueOf: jest.fn().mockReturnValue(0), // for extractCalendarDate
   calendar: jest.fn().mockReturnValue("mocked_calendar_date"),
@@ -68,6 +71,48 @@ describe('MMM-GoogleCalendar', () => {
     test('should handle strings with numbers or symbols at the beginning', () => {
       expect(GCal.capFirst('1test')).toBe('1test');
       expect(GCal.capFirst('$test')).toBe('$test');
+    });
+  });
+
+  describe('extractCalendarDate', () => {
+    test('parses an all-day event (date)', () => {
+      expect(GCal.extractCalendarDate({ date: '2026-06-05' })).toBe(0); // mocked valueOf
+    });
+
+    test('parses a timed event (dateTime)', () => {
+      expect(GCal.extractCalendarDate({ dateTime: '2026-06-05T10:00:00Z' })).toBe(0);
+    });
+
+    test('returns null for undefined without throwing (issue #27)', () => {
+      expect(() => GCal.extractCalendarDate(undefined)).not.toThrow();
+      expect(GCal.extractCalendarDate(undefined)).toBeNull();
+    });
+
+    test('returns null for null without throwing', () => {
+      expect(GCal.extractCalendarDate(null)).toBeNull();
+    });
+  });
+
+  describe('createEventList', () => {
+    test('skips events missing start/end instead of aborting the whole render (issue #27)', () => {
+      GCal.calendarData = {
+        cal1: [
+          { id: 'good', summary: 'Good', start: { dateTime: 'x' }, end: { dateTime: 'y' } },
+          { id: 'cancelled', status: 'cancelled' }, // no start/end
+          { id: 'good2', summary: 'Good2', start: { dateTime: 'x' }, end: { dateTime: 'y' } }
+        ]
+      };
+
+      let result;
+      expect(() => {
+        result = GCal.createEventList();
+      }).not.toThrow();
+
+      // The malformed event is dropped, the valid ones survive.
+      const ids = result.map((e) => e.id);
+      expect(ids).toContain('good');
+      expect(ids).toContain('good2');
+      expect(ids).not.toContain('cancelled');
     });
   });
 
