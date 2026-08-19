@@ -131,6 +131,91 @@ Here's how you set it up:
 
 This module is designed specifically for Google calendars, but it inherits many customizable features from the original MagicMirror² calendar module. To explore all the available options and tailor your calendar display to your liking, please refer to the [MagicMirror² documentation](https://docs.magicmirror.builders/modules/calendar.html).
 
+The sections below cover the options that behave differently here, or that come up most often.
+
+#### Showing more than one calendar
+
+`calendars` is an array, so you can list as many calendars as you like. Each entry needs a `calendarID`; everything else is optional and overrides the module-level setting for that calendar only:
+
+```javascript
+calendars: [
+    {
+      calendarID: "you@gmail.com",
+      symbol: "user",
+      color: "#82b1ff"
+    },
+    {
+      calendarID: "family1234567890@group.calendar.google.com",
+      symbol: "users",
+      color: "#b9f6ca",
+      maximumEntries: 5
+    }
+]
+```
+
+Per-calendar options: `symbol`, `color`, `name`, `symbolClass`, `titleClass`, `timeClass`, `repeatingCountTitle`, `maximumEntries`, `maximumNumberOfDays`, `pastDaysCount`, `broadcastPastEvents` and `excludedEvents`.
+
+#### Holidays and other subscribed calendars
+
+You are not limited to your own calendars. Any calendar the authorizing Google account can read works, including Google's regional holiday calendars, sports schedules, and calendars other people have shared with you.
+
+Google's holiday calendars follow the pattern `<language>.<region>#holiday@group.v.calendar.google.com`:
+
+```javascript
+calendars: [
+    {
+      calendarID: "you@gmail.com",
+      symbol: "user"
+    },
+    {
+      calendarID: "en.usa#holiday@group.v.calendar.google.com",
+      symbol: "flag",
+      color: "#ff8a80"
+    },
+    {
+      calendarID: "en.uk#holiday@group.v.calendar.google.com",
+      symbol: "flag"
+    }
+]
+```
+
+To find the exact ID for any calendar you are subscribed to, open [Google Calendar](https://calendar.google.com) > Settings (gear icon) > look under **Other calendars** in the left sidebar (this is where holiday, shared, and subscribed calendars live, as opposed to **Settings for my calendars**) > select the calendar > `Integrate calendar` > **Calendar ID**.
+
+If a holiday calendar is not listed there yet, subscribe to it first: in Google Calendar, click the `+` next to **Other calendars** > `Browse calendars of interest` > pick your region under **Regional holidays**.
+
+#### Coloring events
+
+There are two independent ways to color entries.
+
+**1. One color per calendar.** Set `colored: true` at the module level, then give each calendar a `color`. Use `coloredSymbolOnly: true` if you want the color applied to the icon but leave the event text in the default color.
+
+```javascript
+config: {
+    colored: true,
+    coloredSymbolOnly: false,
+    calendars: [
+        { calendarID: "you@gmail.com", color: "#82b1ff" },
+        { calendarID: "en.usa#holiday@group.v.calendar.google.com", color: "#ff8a80" }
+    ]
+}
+```
+
+**2. Per-event colors and icons by title, using `customEvents`.** Each entry is `{ keyword, symbol, color }`. `keyword` is matched against the event title as a case-insensitive regular expression, `symbol` is any [Font Awesome](https://fontawesome.com/search?o=r&m=free) icon name (without the `fa-` prefix), and `color` is any CSS color. Symbol and color are resolved independently — for each, the first entry whose `keyword` matches wins — and a match overrides the symbol and color the event would otherwise inherit from its calendar. Symbol replacement requires `displaySymbol` (on by default).
+
+```javascript
+config: {
+    customEvents: [
+        { keyword: "Birthday", symbol: "cake-candles", color: "Gold" },
+        { keyword: "Dentist|Dental", symbol: "tooth", color: "red" },
+        { keyword: "Flight|Travel", symbol: "plane-up", color: "Orange" }
+    ]
+}
+```
+
+`customEvents` works whether or not `colored` is set, and `coloredSymbolOnly: true` is respected for custom events too.
+
+> **Note:** the colors you assign to individual events inside Google Calendar are not mirrored by this module. Coloring is driven by the module configuration above — per calendar, or by matching the event title with `customEvents`.
+
 We are committed to improving and updating this module, so if you have enhancements or updates, feel free to contribute. Merge requests with the latest changes are always appreciated and welcome!
 
 ## Internationalization (i18n)
@@ -147,11 +232,17 @@ We welcome translations! If you'd like to translate the module into your languag
 **What happened to the old types of OAuth credentials?**
 Previously, this module might have worked with or documentation might have confusingly referenced `Web Application` or `TV & Limited Input devices` OAuth credential types. **This module now exclusively supports the `Desktop app` credential type.** This change simplifies the setup process significantly with the current Google authentication libraries. Ensure you download the `credentials.json` for a "Desktop application" from Google Cloud Console.
 
+**Can I show holidays, or calendars other than my own?**
+Yes. Any calendar the authorizing Google account can read can be added to the `calendars` array, including Google's regional holiday calendars (`en.usa#holiday@group.v.calendar.google.com`), shared calendars, and anything under **Other calendars** in your Google Calendar settings. See [Holidays and other subscribed calendars](#holidays-and-other-subscribed-calendars).
+
+**Can I color-code my events?**
+Yes, in two ways: a `color` per calendar (with `colored: true`), or `customEvents` to color and icon events by matching their title. Note that colors assigned to individual events *inside Google Calendar* are not carried over. See [Coloring events](#coloring-events).
+
 **Can this module display `.ICS` calendars or any other format?**
 Unfortunately, this module is designed to work exclusively with Google Calendar. Google Calendar data is formatted differently, which is why there's no support for other calendar types within this module. If you need to display `.ICS` calendars or other formats, consider using the default MagicMirror² calendar module.
 
 **I'm having trouble getting this module to work. What should I do?**
-First, don't worry! We have a troubleshooting guide that addresses common issues and their solutions. If you're still stuck after consulting the guide, please feel free to [open an issue here](https://github.com/randomBrainstormer/MMM-G
+First, don't worry! We have a troubleshooting guide that addresses common issues and their solutions. If you're still stuck after consulting the guide, please feel free to [open an issue here](https://github.com/randomBrainstormer/MMM-GoogleCalendar/issues).
 
 ## Troubleshooting
 
