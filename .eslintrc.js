@@ -8,6 +8,7 @@ const baseConfig = {
     browser: true, // For MMM-GoogleCalendar.js
     node: true,    // For node_helper.js
     es6: true,
+    es2020: true,  // globalThis (used for the native-fetch workaround in node_helper.js)
     jest: true     // Added for Jest testing environment
   },
   parserOptions: {
