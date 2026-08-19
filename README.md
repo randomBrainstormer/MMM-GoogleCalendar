@@ -226,24 +226,29 @@ config: {
 }
 ```
 
-Events you have given a color of their own are drawn in that color. Events left on their calendar's default color have no color of their own in Google, so they fall back to the calendar's `color` — which is why it's still worth setting.
-
 `useGoogleEventColors` requires `colored: true`; on its own it does nothing (the module logs a warning if you set one without the other).
 
-When more than one rule could apply, the most specific wins: a `customEvents` match beats the event's Google color, which beats the calendar's `color`.
+**Which colors you get.** Google ships two event palettes, selectable in its own settings. Both use the same eleven IDs and the same names; only the shades differ. Pick the one matching what you see with `googleEventColorPalette`, which defaults to `"modern"` (Google Calendar's current default):
 
-Google's eleven event colors map to these values:
+| ID | Name | `modern` | `classic` |
+| -- | ---- | -------- | --------- |
+| 1 | Lavender | `#7986cb` | `#a4bdfc` |
+| 2 | Sage | `#33b679` | `#7ae7bf` |
+| 3 | Grape | `#8e24aa` | `#dbadff` |
+| 4 | Flamingo | `#e67c73` | `#ff887c` |
+| 5 | Banana | `#f6bf26` | `#fbd75b` |
+| 6 | Tangerine | `#f4511e` | `#ffb878` |
+| 7 | Peacock | `#039be5` | `#46d6db` |
+| 8 | Graphite | `#616161` | `#e1e1e1` |
+| 9 | Blueberry | `#3f51b5` | `#5484ed` |
+| 10 | Basil | `#0b8043` | `#51b749` |
+| 11 | Tomato | `#d50000` | `#dc2127` |
 
-| ID | Name | Color | ID | Name | Color |
-| -- | ---- | ----- | -- | ---- | ----- |
-| 1 | Lavender | `#7986cb` | 7 | Peacock | `#039be5` |
-| 2 | Sage | `#33b679` | 8 | Graphite | `#616161` |
-| 3 | Grape | `#8e24aa` | 9 | Blueberry | `#3f51b5` |
-| 4 | Flamingo | `#e67c73` | 10 | Basil | `#0b8043` |
-| 5 | Banana | `#f6bf26` | 11 | Tomato | `#d50000` |
-| 6 | Tangerine | `#f4511e` | | | |
+If your colors come out looking washed out, or Graphite shows up near-white instead of grey, you are on the wrong one — switch to `"classic"`.
 
-These are Google's own values, chosen to sit on a white background. A few — Graphite especially — are dim as text on a black mirror. Use `googleEventColorOverrides` to substitute your own for any ID you don't like, leaving the rest alone:
+The palette is a Google UI preference that the API does not report, so the module cannot detect it for you. (The API's own `colors.get` always returns the `classic` values whichever set you use, which is why the module carries the table rather than fetching it.)
+
+**Adjusting individual colors.** These are Google's values, picked to sit on a white background; some read poorly as text on a black mirror. `googleEventColorOverrides` replaces any ID you don't like and leaves the rest alone:
 
 ```javascript
 config: {
@@ -255,6 +260,17 @@ config: {
     }
 }
 ```
+
+**Precedence.** Anything you set explicitly beats anything taken from Google. Highest to lowest:
+
+| # | Source | Beats |
+| - | ------ | ----- |
+| 1 | a `customEvents` keyword match | everything below |
+| 2 | `googleEventColorOverrides` for that `colorId` | the built-in palette |
+| 3 | the event's own color in Google Calendar | the calendar color |
+| 4 | the calendar's `color` | the `#fff` default |
+
+The calendar's `color` deliberately sits *below* the event color: it's the fallback for events that have no color of their own, not an override. Events left on their calendar's default color carry no `colorId` at all, which is why it's still worth setting.
 
 We are committed to improving and updating this module, so if you have enhancements or updates, feel free to contribute. Merge requests with the latest changes are always appreciated and welcome!
 
@@ -276,7 +292,7 @@ Previously, this module might have worked with or documentation might have confu
 Yes. Any calendar the authorizing Google account can read can be added to the `calendars` array, including Google's regional holiday calendars (`en.usa#holiday@group.v.calendar.google.com`), shared calendars, and anything under **Other calendars** in your Google Calendar settings. See [Holidays and other subscribed calendars](#holidays-and-other-subscribed-calendars).
 
 **Can I color-code my events?**
-Yes, in three ways: a `color` per calendar (with `colored: true`), `customEvents` to color and icon events by matching their title, or `useGoogleEventColors: true` to reuse the colors you already assigned to events inside Google Calendar. See [Coloring events](#coloring-events).
+Yes, in three ways: a `color` per calendar (with `colored: true`), `customEvents` to color and icon events by matching their title, or `useGoogleEventColors: true` to reuse the colors you already assigned to events inside Google Calendar (matching either of Google's two palettes). See [Coloring events](#coloring-events).
 
 **Can this module display `.ICS` calendars or any other format?**
 Unfortunately, this module is designed to work exclusively with Google Calendar. Google Calendar data is formatted differently, which is why there's no support for other calendar types within this module. If you need to display `.ICS` calendars or other formats, consider using the default MagicMirror² calendar module.

@@ -40,6 +40,7 @@ Module.register("MMM-GoogleCalendar", {
     colored: false,
     coloredSymbolOnly: false,
     useGoogleEventColors: false, // Color events with the color assigned to them in Google Calendar. Requires `colored`.
+    googleEventColorPalette: "modern", // Which Google palette to match: "modern" or "classic"
     googleEventColorOverrides: {}, // Optional {colorId: cssColor} overrides for the Google event palette
     customEvents: [], // Array of {keyword: "", symbol: "", color: ""} where Keyword is a regexp and symbol/color are to be applied for matched
     tableClass: "small",
@@ -95,6 +96,12 @@ Module.register("MMM-GoogleCalendar", {
     if (this.config.useGoogleEventColors && !this.config.colored) {
       Log.warn(
         `${this.name}: useGoogleEventColors has no effect while colored is false`
+      );
+    }
+
+    if (!this.googleEventColors[this.config.googleEventColorPalette]) {
+      Log.warn(
+        `${this.name}: Unknown googleEventColorPalette "${this.config.googleEventColorPalette}", falling back to "modern"`
       );
     }
 
@@ -990,24 +997,48 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
-   * The palette Google Calendar offers when you color a single event.
-   * Keys are the `colorId` values returned on the event resource, values are
-   * the matching background colors from the API's `colors.get` event section.
-   * Kept static so no extra API request is needed just to render a color;
-   * individual entries can be replaced via `config.googleEventColorOverrides`.
+   * The palettes Google Calendar offers when you color a single event.
+   *
+   * Google ships two sets, selectable under its own settings. Both use the
+   * same eleven IDs and the same names; only the shades differ. Which one a
+   * user sees is a Google UI preference that the API does not expose, so it
+   * cannot be detected — `config.googleEventColorPalette` picks between them.
+   *
+   * Note that `colors.get` always returns the classic values regardless of
+   * that preference, which is why fetching the palette at runtime would not
+   * help: for anyone on the modern set it would return the wrong shades.
    */
   googleEventColors: {
-    1: "#7986cb", // Lavender
-    2: "#33b679", // Sage
-    3: "#8e24aa", // Grape
-    4: "#e67c73", // Flamingo
-    5: "#f6bf26", // Banana
-    6: "#f4511e", // Tangerine
-    7: "#039be5", // Peacock
-    8: "#616161", // Graphite
-    9: "#3f51b5", // Blueberry
-    10: "#0b8043", // Basil
-    11: "#d50000" // Tomato
+    // Values returned by the API's `colors.get` event section.
+    classic: {
+      1: "#a4bdfc", // Lavender
+      2: "#7ae7bf", // Sage
+      3: "#dbadff", // Grape
+      4: "#ff887c", // Flamingo
+      5: "#fbd75b", // Banana
+      6: "#ffb878", // Tangerine
+      7: "#46d6db", // Peacock
+      8: "#e1e1e1", // Graphite
+      9: "#5484ed", // Blueberry
+      10: "#51b749", // Basil
+      11: "#dc2127" // Tomato
+    },
+    // Google Calendar's current default set. Google does not publish these
+    // anywhere machine-readable, so they are best-effort; use
+    // `googleEventColorOverrides` for any that look off against your calendar.
+    modern: {
+      1: "#7986cb", // Lavender
+      2: "#33b679", // Sage
+      3: "#8e24aa", // Grape
+      4: "#e67c73", // Flamingo
+      5: "#f6bf26", // Banana
+      6: "#f4511e", // Tangerine
+      7: "#039be5", // Peacock
+      8: "#616161", // Graphite
+      9: "#3f51b5", // Blueberry
+      10: "#0b8043", // Basil
+      11: "#d50000" // Tomato
+    }
   },
 
   /**
@@ -1023,9 +1054,12 @@ Module.register("MMM-GoogleCalendar", {
    */
   colorForEvent: function (event) {
     if (this.config.useGoogleEventColors && event?.colorId) {
+      const palette =
+        this.googleEventColors[this.config.googleEventColorPalette] ||
+        this.googleEventColors.modern;
       const eventColor =
         this.config.googleEventColorOverrides?.[event.colorId] ||
-        this.googleEventColors[event.colorId];
+        palette[event.colorId];
 
       if (eventColor) {
         return eventColor;

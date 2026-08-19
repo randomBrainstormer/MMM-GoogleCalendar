@@ -183,10 +183,37 @@ describe('MMM-GoogleCalendar', () => {
       expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '11' })).toBe('#abcdef');
     });
 
-    test('maps a Google colorId to its palette color when enabled', () => {
+    test('maps a Google colorId to the modern palette by default', () => {
       GCal.config.useGoogleEventColors = true;
       expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '11' })).toBe('#d50000');
       expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '1' })).toBe('#7986cb');
+    });
+
+    test('maps to the classic palette when asked for it', () => {
+      GCal.config.useGoogleEventColors = true;
+      GCal.config.googleEventColorPalette = 'classic';
+      // The values colors.get actually returns.
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '11' })).toBe('#dc2127');
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '1' })).toBe('#a4bdfc');
+      // Graphite is near-white in classic and dark grey in modern, so it is
+      // the clearest signal that the right palette is in play.
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '8' })).toBe('#e1e1e1');
+    });
+
+    test('falls back to the modern palette for an unknown palette name', () => {
+      GCal.config.useGoogleEventColors = true;
+      GCal.config.googleEventColorPalette = 'neon';
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '8' })).toBe('#616161');
+    });
+
+    test('both palettes define all eleven Google color IDs', () => {
+      for (const palette of ['modern', 'classic']) {
+        const ids = Object.keys(GCal.googleEventColors[palette]);
+        expect(ids).toHaveLength(11);
+        expect(ids.sort((a, b) => a - b)).toEqual(
+          ['1','2','3','4','5','6','7','8','9','10','11'].sort((a, b) => a - b)
+        );
+      }
     });
 
     test('accepts numeric colorIds as well as strings', () => {
@@ -200,12 +227,17 @@ describe('MMM-GoogleCalendar', () => {
       expect(GCal.colorForEvent({ calendarID: 'cal-a' })).toBe('#abcdef');
     });
 
-    test('honours googleEventColorOverrides ahead of the built-in palette', () => {
+    test('honours googleEventColorOverrides ahead of either palette', () => {
       GCal.config.useGoogleEventColors = true;
       GCal.config.googleEventColorOverrides = { 8: '#ffffff' };
       expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '8' })).toBe('#ffffff');
       // Unrelated IDs keep the built-in value.
       expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '2' })).toBe('#33b679');
+
+      // An override wins over the selected palette, not just the default one.
+      GCal.config.googleEventColorPalette = 'classic';
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '8' })).toBe('#ffffff');
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '2' })).toBe('#7ae7bf');
     });
 
     test('falls back to the calendar color for an unknown colorId', () => {
