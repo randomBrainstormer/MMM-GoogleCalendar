@@ -185,7 +185,44 @@ If a holiday calendar is not listed there yet, subscribe to it first: in Google 
 
 #### Coloring events
 
-There are three ways to color entries.
+There are three ways to color entries. If you just want the short version, here is a complete, working config block you can copy into `config.js` and edit:
+
+```javascript
+{
+    module: 'MMM-GoogleCalendar',
+    header: "My Calendar",
+    position: "top_left",
+    config: {
+        // Turn coloring on. Without this, everything below is ignored.
+        colored: true,
+
+        // Use the colors you already picked for events in Google Calendar.
+        // Set to false if you'd rather colors came only from this file.
+        useGoogleEventColors: true,
+
+        // "modern" matches Google Calendar today. Switch to "classic" if the
+        // colors on your mirror look paler than the ones on your screen.
+        googleEventColorPalette: "modern",
+
+        // Your own colors. These win over anything Google sends.
+        customEvents: [
+            { keyword: "Birthday", symbol: "cake-candles", color: "Gold" },
+            { keyword: "Dentist",  symbol: "tooth",        color: "red" }
+        ],
+
+        calendars: [
+            // "color" is the fallback for events you never gave a color to.
+            { calendarID: "you@gmail.com", color: "#82b1ff" }
+        ]
+    }
+}
+```
+
+**To turn Google's event colors off again**, set `useGoogleEventColors: false`. Every event then falls back to its calendar's `color`, and your `customEvents` keep working exactly as before.
+
+**Your own colors always win.** Anything you write in `config.js` — a `customEvents` keyword, or a `googleEventColorOverrides` entry — overrides the color coming from Google. Google's colors only apply where you haven't said otherwise. The full order is in [Precedence](#precedence) below.
+
+The rest of this section explains each piece.
 
 **1. One color per calendar.** Set `colored: true` at the module level, then give each calendar a `color`. Use `coloredSymbolOnly: true` if you want the color applied to the icon but leave the event text in the default color.
 
@@ -261,7 +298,9 @@ config: {
 }
 ```
 
-**Precedence.** Anything you set explicitly beats anything taken from Google. Highest to lowest:
+##### Precedence
+
+Anything you set explicitly beats anything taken from Google. Highest to lowest:
 
 | # | Source | Beats |
 | - | ------ | ----- |
