@@ -185,7 +185,7 @@ If a holiday calendar is not listed there yet, subscribe to it first: in Google 
 
 #### Coloring events
 
-There are two independent ways to color entries.
+There are three ways to color entries.
 
 **1. One color per calendar.** Set `colored: true` at the module level, then give each calendar a `color`. Use `coloredSymbolOnly: true` if you want the color applied to the icon but leave the event text in the default color.
 
@@ -214,7 +214,47 @@ config: {
 
 `customEvents` works whether or not `colored` is set, and `coloredSymbolOnly: true` is respected for custom events too.
 
-> **Note:** the colors you assign to individual events inside Google Calendar are not mirrored by this module. Coloring is driven by the module configuration above — per calendar, or by matching the event title with `customEvents`.
+**3. Per-event colors from Google Calendar itself.** If you already color-code events inside Google Calendar, set `useGoogleEventColors: true` to carry those colors over instead of describing them again in your config:
+
+```javascript
+config: {
+    colored: true,
+    useGoogleEventColors: true,
+    calendars: [
+        { calendarID: "you@gmail.com", color: "#82b1ff" }
+    ]
+}
+```
+
+Events you have given a color of their own are drawn in that color. Events left on their calendar's default color have no color of their own in Google, so they fall back to the calendar's `color` — which is why it's still worth setting.
+
+`useGoogleEventColors` requires `colored: true`; on its own it does nothing (the module logs a warning if you set one without the other).
+
+When more than one rule could apply, the most specific wins: a `customEvents` match beats the event's Google color, which beats the calendar's `color`.
+
+Google's eleven event colors map to these values:
+
+| ID | Name | Color | ID | Name | Color |
+| -- | ---- | ----- | -- | ---- | ----- |
+| 1 | Lavender | `#7986cb` | 7 | Peacock | `#039be5` |
+| 2 | Sage | `#33b679` | 8 | Graphite | `#616161` |
+| 3 | Grape | `#8e24aa` | 9 | Blueberry | `#3f51b5` |
+| 4 | Flamingo | `#e67c73` | 10 | Basil | `#0b8043` |
+| 5 | Banana | `#f6bf26` | 11 | Tomato | `#d50000` |
+| 6 | Tangerine | `#f4511e` | | | |
+
+These are Google's own values, chosen to sit on a white background. A few — Graphite especially — are dim as text on a black mirror. Use `googleEventColorOverrides` to substitute your own for any ID you don't like, leaving the rest alone:
+
+```javascript
+config: {
+    colored: true,
+    useGoogleEventColors: true,
+    googleEventColorOverrides: {
+        8: "#bdbdbd",  // Graphite, lightened for a dark background
+        11: "#ff5252"  // Tomato, softened
+    }
+}
+```
 
 We are committed to improving and updating this module, so if you have enhancements or updates, feel free to contribute. Merge requests with the latest changes are always appreciated and welcome!
 
@@ -236,7 +276,7 @@ Previously, this module might have worked with or documentation might have confu
 Yes. Any calendar the authorizing Google account can read can be added to the `calendars` array, including Google's regional holiday calendars (`en.usa#holiday@group.v.calendar.google.com`), shared calendars, and anything under **Other calendars** in your Google Calendar settings. See [Holidays and other subscribed calendars](#holidays-and-other-subscribed-calendars).
 
 **Can I color-code my events?**
-Yes, in two ways: a `color` per calendar (with `colored: true`), or `customEvents` to color and icon events by matching their title. Note that colors assigned to individual events *inside Google Calendar* are not carried over. See [Coloring events](#coloring-events).
+Yes, in three ways: a `color` per calendar (with `colored: true`), `customEvents` to color and icon events by matching their title, or `useGoogleEventColors: true` to reuse the colors you already assigned to events inside Google Calendar. See [Coloring events](#coloring-events).
 
 **Can this module display `.ICS` calendars or any other format?**
 Unfortunately, this module is designed to work exclusively with Google Calendar. Google Calendar data is formatted differently, which is why there's no support for other calendar types within this module. If you need to display `.ICS` calendars or other formats, consider using the default MagicMirror² calendar module.

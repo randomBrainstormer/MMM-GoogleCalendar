@@ -173,5 +173,52 @@ describe('MMM-GoogleCalendar', () => {
     });
   });
 
+  describe('colorForEvent (issue #75)', () => {
+    beforeEach(() => {
+      GCal.config.calendars = [{ calendarID: 'cal-a', color: '#abcdef' }];
+    });
+
+    test('falls back to the calendar color when the feature is off', () => {
+      GCal.config.useGoogleEventColors = false;
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '11' })).toBe('#abcdef');
+    });
+
+    test('maps a Google colorId to its palette color when enabled', () => {
+      GCal.config.useGoogleEventColors = true;
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '11' })).toBe('#d50000');
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '1' })).toBe('#7986cb');
+    });
+
+    test('accepts numeric colorIds as well as strings', () => {
+      GCal.config.useGoogleEventColors = true;
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: 5 })).toBe('#f6bf26');
+    });
+
+    test('falls back to the calendar color for events with no colorId', () => {
+      // Events using their calendar's default color carry no colorId at all.
+      GCal.config.useGoogleEventColors = true;
+      expect(GCal.colorForEvent({ calendarID: 'cal-a' })).toBe('#abcdef');
+    });
+
+    test('honours googleEventColorOverrides ahead of the built-in palette', () => {
+      GCal.config.useGoogleEventColors = true;
+      GCal.config.googleEventColorOverrides = { 8: '#ffffff' };
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '8' })).toBe('#ffffff');
+      // Unrelated IDs keep the built-in value.
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '2' })).toBe('#33b679');
+    });
+
+    test('falls back to the calendar color for an unknown colorId', () => {
+      GCal.config.useGoogleEventColors = true;
+      expect(GCal.colorForEvent({ calendarID: 'cal-a', colorId: '99' })).toBe('#abcdef');
+      expect(global.Log.warn).toHaveBeenCalled();
+    });
+
+    test('falls back to the default color for an unknown calendar', () => {
+      GCal.config.useGoogleEventColors = true;
+      expect(GCal.colorForEvent({ calendarID: 'nope' })).toBe('#fff');
+    });
+  });
+
   // Add more describe blocks for other pure functions if identified
 });

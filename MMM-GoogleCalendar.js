@@ -39,6 +39,8 @@ Module.register("MMM-GoogleCalendar", {
     hideDuplicates: false,
     colored: false,
     coloredSymbolOnly: false,
+    useGoogleEventColors: false, // Color events with the color assigned to them in Google Calendar. Requires `colored`.
+    googleEventColorOverrides: {}, // Optional {colorId: cssColor} overrides for the Google event palette
     customEvents: [], // Array of {keyword: "", symbol: "", color: ""} where Keyword is a regexp and symbol/color are to be applied for matched
     tableClass: "small",
     calendars: [
@@ -89,6 +91,12 @@ Module.register("MMM-GoogleCalendar", {
       config.language,
       this.getLocaleSpecification(config.timeFormat)
     );
+
+    if (this.config.useGoogleEventColors && !this.config.colored) {
+      Log.warn(
+        `${this.name}: useGoogleEventColors has no effect while colored is false`
+      );
+    }
 
     // clear data holder before start
     this.calendarData = {};
@@ -243,7 +251,7 @@ Module.register("MMM-GoogleCalendar", {
       const eventWrapper = document.createElement("tr");
 
       if (this.config.colored && !this.config.coloredSymbolOnly) {
-        eventWrapper.style.cssText = `color:${this.colorForCalendar(event.calendarID)}`;
+        eventWrapper.style.cssText = `color:${this.colorForEvent(event)}`;
       }
 
       eventWrapper.className = "normal event";
@@ -252,7 +260,7 @@ Module.register("MMM-GoogleCalendar", {
 
       if (this.config.displaySymbol) {
         if (this.config.colored && this.config.coloredSymbolOnly) {
-          symbolWrapper.style.cssText = `color:${this.colorForCalendar(event.calendarID)}`;
+          symbolWrapper.style.cssText = `color:${this.colorForEvent(event)}`;
         }
 
         const symbolClass = this.symbolClassForCalendar(event.calendarID);
@@ -982,6 +990,58 @@ Module.register("MMM-GoogleCalendar", {
   },
 
   /**
+   * The palette Google Calendar offers when you color a single event.
+   * Keys are the `colorId` values returned on the event resource, values are
+   * the matching background colors from the API's `colors.get` event section.
+   * Kept static so no extra API request is needed just to render a color;
+   * individual entries can be replaced via `config.googleEventColorOverrides`.
+   */
+  googleEventColors: {
+    1: "#7986cb", // Lavender
+    2: "#33b679", // Sage
+    3: "#8e24aa", // Grape
+    4: "#e67c73", // Flamingo
+    5: "#f6bf26", // Banana
+    6: "#f4511e", // Tangerine
+    7: "#039be5", // Peacock
+    8: "#616161", // Graphite
+    9: "#3f51b5", // Blueberry
+    10: "#0b8043", // Basil
+    11: "#d50000" // Tomato
+  },
+
+  /**
+   * Retrieves the color for a single event.
+   *
+   * Prefers the color the user assigned to the event in Google Calendar, and
+   * falls back to the calendar color. An event only carries a `colorId` when
+   * it has been given a color of its own; events using their calendar's
+   * default color have no such field, which is why the fallback matters.
+   *
+   * @param {object} event The event
+   * @returns {string} The color
+   */
+  colorForEvent: function (event) {
+    if (this.config.useGoogleEventColors && event?.colorId) {
+      const eventColor =
+        this.config.googleEventColorOverrides?.[event.colorId] ||
+        this.googleEventColors[event.colorId];
+
+      if (eventColor) {
+        return eventColor;
+      }
+
+      // Unknown ID, most likely a palette entry added after this map was
+      // written. Fall through to the calendar color rather than render nothing.
+      Log.warn(
+        `${this.name}: Unknown Google event colorId "${event.colorId}", using calendar color instead`
+      );
+    }
+
+    return this.colorForCalendar(event?.calendarID);
+  },
+
+  /**
    * Retrieves the count title for a specific calendar ID.
    *
    * @param {string} calendarID The calendar ID
@@ -1178,7 +1238,7 @@ Module.register("MMM-GoogleCalendar", {
         event.calendarID = calendarID;
         event.symbol = this.symbolsForEvent(event);
         event.calendarName = this.calendarNameForCalendar(calendarID);
-        event.color = this.colorForCalendar(calendarID);
+        event.color = this.colorForEvent(event);
         delete event.calendarID;
 
         // Make a broadcasting event to be compatible with the default calendar module.
