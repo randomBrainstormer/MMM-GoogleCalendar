@@ -27,7 +27,6 @@
   },
   "homepage": "https://github.com/randomBrainstormer/MMM-GoogleCalendar#readme",
   "dependencies": {
-    "@google-cloud/local-auth": "^3.0.1",
     "googleapis": "^149.0.0"
   },
   "devDependencies": {
