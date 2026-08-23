@@ -4,7 +4,8 @@ const {
   encodeQueryData,
   formatError,
   useNativeFetch,
-  pickLoopbackRedirectUri
+  pickLoopbackRedirectUri,
+  withDefaultPort
 } = require("./helpers");
 const fs = require("fs");
 const path = require("path");
@@ -12,9 +13,13 @@ const Log = require("logger");
 
 const TOKEN_FILE_NAME = "token.json";
 const CREDENTIALS_FILE_NAME = "credentials.json";
-// Used when credentials.json carries no usable loopback redirect. Matches
-// MagicMirror's default server port, since that's where Google sends the browser back to.
-const DEFAULT_REDIRECT_URI = "http://localhost:8080";
+// MagicMirror's default server port. Google sends the browser back here after
+// consent, and the code is only picked up if it lands on the MagicMirror server, so
+// a redirect without a port gets this one filled in. Change it if you run
+// MagicMirror on a different port.
+const DEFAULT_SERVER_PORT = 8080;
+// Used when credentials.json carries no usable loopback redirect at all.
+const DEFAULT_REDIRECT_URI = `http://localhost:${DEFAULT_SERVER_PORT}`;
 
 module.exports = NodeHelper.create({
   // Override start method.
@@ -128,7 +133,10 @@ module.exports = NodeHelper.create({
     _this.oAuth2Client = new google.auth.OAuth2(
       client_id,
       client_secret,
-      pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI)
+      withDefaultPort(
+        pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+        DEFAULT_SERVER_PORT
+      )
     );
     useNativeFetch(_this.oAuth2Client);
 
@@ -231,16 +239,21 @@ module.exports = NodeHelper.create({
       _this.oAuth2Client = new google.auth.OAuth2(
         client_id,
         client_secret,
-        pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI)
+        withDefaultPort(
+          pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+          DEFAULT_SERVER_PORT
+        )
       );
       useNativeFetch(_this.oAuth2Client);
 
       // Check if we have previously stored a token.
       fs.readFile(path.join(_this.path, TOKEN_FILE_NAME), (err, token) => {
         if (err) {
-          const redirect_uri = pickLoopbackRedirectUri(
-            redirect_uris,
-            DEFAULT_REDIRECT_URI
+          // Must match the redirect_uri the OAuth2 client above was built with,
+          // or Google rejects the later code-for-token exchange.
+          const redirect_uri = withDefaultPort(
+            pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+            DEFAULT_SERVER_PORT
           );
 
           _this.sendSocketNotification("AUTH_NEEDED", {

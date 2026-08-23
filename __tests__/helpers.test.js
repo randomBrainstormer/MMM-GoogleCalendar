@@ -2,7 +2,8 @@ const {
   encodeQueryData,
   formatError,
   useNativeFetch,
-  pickLoopbackRedirectUri
+  pickLoopbackRedirectUri,
+  withDefaultPort
 } = require('../helpers.js');
 const { extractCode, parseArgs } = require('../authorize.js');
 
@@ -167,5 +168,31 @@ describe("parseArgs", () => {
   it("recognises --help and rejects unknown options", () => {
     expect(parseArgs(["--help"]).help).toBe(true);
     expect(() => parseArgs(["--nope"])).toThrow(/Unknown option/);
+  });
+});
+
+describe("withDefaultPort", () => {
+  it("fills in MagicMirror's port for a bare localhost redirect", () => {
+    // The common case: Desktop-app credentials.json ships "http://localhost",
+    // which would otherwise mean port 80, where nothing is listening.
+    expect(withDefaultPort("http://localhost", 8080)).toBe(
+      "http://localhost:8080/"
+    );
+  });
+
+  it("leaves an explicit port untouched", () => {
+    expect(withDefaultPort("http://localhost:3000", 8080)).toBe(
+      "http://localhost:3000/"
+    );
+  });
+
+  it("preserves the path", () => {
+    expect(withDefaultPort("http://localhost/oauth2callback", 8080)).toBe(
+      "http://localhost:8080/oauth2callback"
+    );
+  });
+
+  it("returns unparseable input unchanged", () => {
+    expect(withDefaultPort("not a url", 8080)).toBe("not a url");
   });
 });

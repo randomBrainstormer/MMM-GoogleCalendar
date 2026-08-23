@@ -113,11 +113,40 @@ function pickLoopbackRedirectUri(redirectUris, fallback) {
   return match || fallback;
 }
 
+/**
+ * Fill in a port on a redirect URI that doesn't specify one.
+ *
+ * Desktop-app credentials.json files carry a bare "http://localhost", which means
+ * port 80. Nothing serves MagicMirror there, so Google would send the browser to a
+ * dead address after consent. The browser has to land back on the MagicMirror server
+ * for it to pick the code up, so default to the port MagicMirror listens on.
+ *
+ * Adding an explicit port is safe: Google accepts any loopback port for a Desktop-app
+ * client without prior registration (RFC 8252 section 7.3), and this is the same
+ * normalization @google-cloud/local-auth used to apply.
+ *
+ * @param {string} redirectUri
+ * @param {number|string} defaultPort
+ * @returns {string} the URI, with a port guaranteed
+ */
+function withDefaultPort(redirectUri, defaultPort) {
+  try {
+    const url = new URL(redirectUri);
+    if (!url.port) {
+      url.port = String(defaultPort);
+    }
+    return url.toString();
+  } catch (err) {
+    return redirectUri;
+  }
+}
+
 module.exports = {
   encodeQueryData,
   formatError,
   useNativeFetch,
   isLoopbackHostname,
   pickLoopbackRedirectUri,
+  withDefaultPort,
   OOB_REDIRECT_URIS
 };
