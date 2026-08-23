@@ -94,6 +94,38 @@ To re-authorize later (for example after revoking access), delete `token.json` a
 
 You have now configured the module to access your Google Calendar. The next step is to add it to your MagicMirror `config.js`.
 
+### Remote and headless setups (SSH, Docker, no screen)
+
+`node authorize.js` needs no browser on the device, so the steps above already work over SSH. Three ways to run it, easiest first:
+
+**1. Copy the URL back by hand (works everywhere, nothing to set up)**
+
+Exactly the flow described above: run `node authorize.js`, open the printed URL on your laptop or phone, then paste the resulting `localhost` URL back into the terminal. The page not loading is expected — you only need what's in the address bar.
+
+**2. Forward the port over SSH (no copying at all)**
+
+Pin the port with `--port` and tunnel it, and the script catches the redirect itself:
+
+```sh
+ssh -L 9999:localhost:9999 pi@your-mirror
+cd ~/MagicMirror/modules/MMM-GoogleCalendar
+node authorize.js --port 9999
+```
+
+Open the printed URL in a browser on your own machine. When Google redirects to `http://localhost:9999/...`, SSH carries it to the Pi and authorization finishes on its own. Any free port works as long as both numbers match — Google accepts any loopback port for a Desktop app client.
+
+**3. Authorize on another machine and copy the token over**
+
+`token.json` isn't tied to the device that created it. Run the authorization on a laptop that has both `credentials.json` and this repo checked out, then copy the resulting `token.json` to the module directory on the Pi:
+
+```sh
+scp token.json pi@your-mirror:~/MagicMirror/modules/MMM-GoogleCalendar/
+```
+
+Useful for Docker setups where the module directory is a mounted volume.
+
+> **A note on "TV and Limited Input device" credentials:** Google's device flow — the one where you type a short code at <https://google.com/device> — would be a natural fit here, but Google [restricts it to a fixed set of scopes](https://developers.google.com/identity/protocols/oauth2/limited-input-device) covering only sign-in, Drive and YouTube. Calendar scopes are not on that list, so that flow cannot be used by this module.
+
 ### What access does the module ask for?
 
 The module requests exactly one OAuth scope:

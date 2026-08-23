@@ -17,6 +17,44 @@ const CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
 // so when credentials.json doesn't pin one we let the OS pick a free port.
 const EPHEMERAL_PORT = 0;
 
+const USAGE = `Usage: node authorize.js [--port <number>]
+
+Authorizes this module against your Google account and writes token.json.
+
+  --port <number>  Listen on this exact port instead of one chosen at random.
+                   Use it with an SSH tunnel so authorization completes without
+                   copying anything by hand:
+
+                     ssh -L 9999:localhost:9999 pi@your-mirror
+                     node authorize.js --port 9999
+
+                   Then open the printed URL in a browser on your own machine.
+  --help           Show this message.
+`;
+
+/**
+ * @param {string[]} argv
+ * @return {{port: number|null, help: boolean}}
+ */
+function parseArgs(argv) {
+  const args = { port: null, help: false };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--help" || arg === "-h") {
+      args.help = true;
+    } else if (arg === "--port" || arg === "-p") {
+      const value = Number(argv[++i]);
+      if (!Number.isInteger(value) || value < 1 || value > 65535) {
+        throw new Error(`--port needs a number between 1 and 65535.`);
+      }
+      args.port = value;
+    } else {
+      throw new Error(`Unknown option "${arg}".\n\n${USAGE}`);
+    }
+  }
+  return args;
+}
+
 /**
  * Reads previously authorized credentials from the save file.
  *
@@ -137,8 +175,8 @@ function extractCode(input) {
  * @param {function(Error): void} onError
  * @return {Promise<{server: http.Server|null, port: number}>}
  */
-function startLoopbackListener(port, onCode, onError) {
-  return new Promise((resolve) => {
+function startLoopbackListener(port, onCode, onError, strict = false) {
+  return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       let code;
       try {
@@ -159,6 +197,17 @@ function startLoopbackListener(port, onCode, onError) {
     });
 
     server.on("error", (err) => {
+      if (strict) {
+        // The user pinned this port, most likely to match an SSH tunnel. Moving
+        // to another one would quietly break that, so fail loudly instead.
+        reject(
+          new Error(
+            `Could not listen on port ${port}: ${err.message}\n` +
+              "Pick a free port, or drop --port to let one be chosen automatically."
+          )
+        );
+        return;
+      }
       if (port !== EPHEMERAL_PORT) {
         // Retry on a port the OS picks for us - Google allows any loopback port.
         startLoopbackListener(EPHEMERAL_PORT, onCode, onError).then(resolve);
@@ -177,7 +226,7 @@ function startLoopbackListener(port, onCode, onError) {
 /**
  * Load, or request, authorization to call APIs.
  */
-async function authorize() {
+async function authorize({ port: requestedPortOverride = null } = {}) {
   const existing = await loadSavedCredentialsIfExist();
   if (existing) {
     console.log(
@@ -197,9 +246,9 @@ async function authorize() {
     "http://localhost"
   );
   const redirectUrl = new URL(configuredRedirect);
-  const requestedPort = redirectUrl.port
-    ? Number(redirectUrl.port)
-    : EPHEMERAL_PORT;
+  const requestedPort =
+    requestedPortOverride ||
+    (redirectUrl.port ? Number(redirectUrl.port) : EPHEMERAL_PORT);
 
   let resolveCode;
   let rejectFlow;
@@ -216,7 +265,8 @@ async function authorize() {
         "MMM-GoogleCalendar: could not open a local listener, so the browser",
         "redirect can't be caught automatically. Use the copy/paste step below."
       );
-    }
+    },
+    requestedPortOverride !== null
   );
 
   redirectUrl.port = String(port);
@@ -345,12 +395,19 @@ async function listEvents(auth) {
 }
 
 if (require.main === module) {
-  authorize()
-    .then(listEvents)
+  Promise.resolve()
+    .then(() => {
+      const args = parseArgs(process.argv.slice(2));
+      if (args.help) {
+        console.log(USAGE);
+        return null;
+      }
+      return authorize(args).then(listEvents);
+    })
     .catch((err) => {
       console.error(`\nMMM-GoogleCalendar: ${err.message}`);
       process.exitCode = 1;
     });
 }
 
-module.exports = { extractCode, loadClientSecrets, saveCredentials };
+module.exports = { extractCode, loadClientSecrets, saveCredentials, parseArgs };

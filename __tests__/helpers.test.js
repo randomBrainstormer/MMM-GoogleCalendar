@@ -4,7 +4,7 @@ const {
   useNativeFetch,
   pickLoopbackRedirectUri
 } = require('../helpers.js');
-const { extractCode } = require('../authorize.js');
+const { extractCode, parseArgs } = require('../authorize.js');
 
 describe('encodeQueryData', () => {
   test('should return an empty string for an empty object', () => {
@@ -144,5 +144,28 @@ describe("extractCode", () => {
   it("returns null for empty input, and for a URL with no code", () => {
     expect(extractCode("   ")).toBeNull();
     expect(extractCode("http://localhost:1234/?error=access_denied")).toBeNull();
+  });
+});
+
+describe("parseArgs", () => {
+  it("defaults to no pinned port", () => {
+    expect(parseArgs([])).toEqual({ port: null, help: false });
+  });
+
+  it("accepts --port and -p", () => {
+    expect(parseArgs(["--port", "9999"]).port).toBe(9999);
+    expect(parseArgs(["-p", "1"]).port).toBe(1);
+  });
+
+  it("rejects ports that aren't usable", () => {
+    expect(() => parseArgs(["--port", "abc"])).toThrow(/between 1 and 65535/);
+    expect(() => parseArgs(["--port", "0"])).toThrow(/between 1 and 65535/);
+    expect(() => parseArgs(["--port", "70000"])).toThrow(/between 1 and 65535/);
+    expect(() => parseArgs(["--port"])).toThrow(/between 1 and 65535/);
+  });
+
+  it("recognises --help and rejects unknown options", () => {
+    expect(parseArgs(["--help"]).help).toBe(true);
+    expect(() => parseArgs(["--nope"])).toThrow(/Unknown option/);
   });
 });
