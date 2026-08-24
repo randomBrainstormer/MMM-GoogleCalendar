@@ -1,39 +1,25 @@
 const NodeHelper = require("node_helper");
 const { google } = require("googleapis");
-const { encodeQueryData, formatError } = require("./helpers");
+const {
+  encodeQueryData,
+  formatError,
+  useNativeFetch,
+  pickLoopbackRedirectUri,
+  withDefaultPort
+} = require("./helpers");
 const fs = require("fs");
 const path = require("path");
 const Log = require("logger");
 
 const TOKEN_FILE_NAME = "token.json";
 const CREDENTIALS_FILE_NAME = "credentials.json";
-
-// gaxios (google-auth-library's HTTP transport) only uses the platform's built-in
-// fetch when a browser `window` global exists; with no `window` - i.e. node_helper.js
-// running inside MagicMirror's Electron main process (the default `npm start` path) -
-// it falls back to the node-fetch@2 npm package. On Node 24.17.0 that path throws a
-// false-positive "Premature close" (ERR_STREAM_PREMATURE_CLOSE) from an http.Agent
-// keep-alive regression (nodejs/node#63989, fixed upstream in a later 24.x), which
-// breaks OAuth token refresh and calendar fetches. Node's built-in fetch (undici) has
-// its own connection pool and never touches http.Agent, so pointing gaxios at it via
-// its documented `fetchImplementation` option (https://github.com/googleapis/gaxios#request-options)
-// sidesteps the bug while keeping the whole googleapis stack intact. gaxios' own JSDoc
-// for the option confirms the default: "will use the browser context if available, and
-// fall back to `node-fetch` in node.js otherwise." Both the token refresh and the events.list call go through
-// the OAuth2 client's transporter, so setting it there covers both. Harmless on
-// server-only mode and on unaffected Node versions. See issue #99.
-const nativeFetch =
-  typeof globalThis.fetch === "function"
-    ? (...args) => globalThis.fetch(...args)
-    : undefined;
-
-function useNativeFetch(oAuth2Client) {
-  if (nativeFetch && oAuth2Client && oAuth2Client.transporter) {
-    oAuth2Client.transporter.defaults = oAuth2Client.transporter.defaults || {};
-    oAuth2Client.transporter.defaults.fetchImplementation = nativeFetch;
-  }
-  return oAuth2Client;
-}
+// MagicMirror's default server port. Google sends the browser back here after
+// consent, and the code is only picked up if it lands on the MagicMirror server, so
+// a redirect without a port gets this one filled in. Change it if you run
+// MagicMirror on a different port.
+const DEFAULT_SERVER_PORT = 8080;
+// Used when credentials.json carries no usable loopback redirect at all.
+const DEFAULT_REDIRECT_URI = `http://localhost:${DEFAULT_SERVER_PORT}`;
 
 module.exports = NodeHelper.create({
   // Override start method.
@@ -147,7 +133,10 @@ module.exports = NodeHelper.create({
     _this.oAuth2Client = new google.auth.OAuth2(
       client_id,
       client_secret,
-      redirect_uris ? redirect_uris[0] : "http://localhost:8080" // Default redirect URI
+      withDefaultPort(
+        pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+        DEFAULT_SERVER_PORT
+      )
     );
     useNativeFetch(_this.oAuth2Client);
 
@@ -250,16 +239,22 @@ module.exports = NodeHelper.create({
       _this.oAuth2Client = new google.auth.OAuth2(
         client_id,
         client_secret,
-        redirect_uris ? redirect_uris[0] : "http://localhost:8080" // Default redirect URI
+        withDefaultPort(
+          pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+          DEFAULT_SERVER_PORT
+        )
       );
       useNativeFetch(_this.oAuth2Client);
 
       // Check if we have previously stored a token.
       fs.readFile(path.join(_this.path, TOKEN_FILE_NAME), (err, token) => {
         if (err) {
-          const redirect_uri = redirect_uris
-            ? redirect_uris[0]
-            : `http://localhost:8080`;
+          // Must match the redirect_uri the OAuth2 client above was built with,
+          // or Google rejects the later code-for-token exchange.
+          const redirect_uri = withDefaultPort(
+            pickLoopbackRedirectUri(redirect_uris, DEFAULT_REDIRECT_URI),
+            DEFAULT_SERVER_PORT
+          );
 
           _this.sendSocketNotification("AUTH_NEEDED", {
             url: `https://accounts.google.com/o/oauth2/v2/auth?${encodeQueryData(
