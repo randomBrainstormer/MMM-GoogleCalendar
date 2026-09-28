@@ -6,9 +6,13 @@ name: Auto version bump
 #
 # Default bump is "patch". To bump minor or major, add a label named
 # "minor" or "major" to the PR before merging.
+#
+# Uses pull_request_target so the token can push for PRs from forks too
+# (plain pull_request gets a read-only token for those). This is safe
+# because the job only checks out main, never the PR's head branch.
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
     branches: [main]
 
