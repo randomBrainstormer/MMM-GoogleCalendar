@@ -25,7 +25,10 @@ module.exports = NodeHelper.create({
   // Override start method.
   start: function () {
     Log.log("Starting node helper for: " + this.name);
-    this.fetchers = [];
+    // One fetch loop per module instance + calendar, keyed by fetcherKey().
+    // SERVICE_READY is broadcast to every instance, so the same calendar can be
+    // added several times; without this each add would start its own loop.
+    this.fetchers = new Map();
     this.isHelperActive = true;
 
     this.calendarService;
@@ -33,6 +36,9 @@ module.exports = NodeHelper.create({
 
   stop: function () {
     this.isHelperActive = false;
+    for (const fetcher of this.fetchers.values()) {
+      clearTimeout(fetcher.timer);
+    }
   },
 
   // Override socketNotificationReceived method.
@@ -50,15 +56,38 @@ module.exports = NodeHelper.create({
       }
     }
     if (notification === "ADD_CALENDAR") {
-      this.fetchCalendar(
-        payload.calendarID,
-        payload.fetchInterval,
-        payload.maximumEntries,
-        payload.pastDaysCount,
-        payload.maximumNumberOfDays,
-        payload.id
-      );
+      this.addCalendar(payload);
     }
+  },
+
+  fetcherKey: function (identifier, calendarID) {
+    return `${identifier}::${calendarID}`;
+  },
+
+  addCalendar: function (payload) {
+    const key = this.fetcherKey(payload.id, payload.calendarID);
+    const params = {
+      calendarID: payload.calendarID,
+      fetchInterval: payload.fetchInterval,
+      maximumEntries: payload.maximumEntries,
+      pastDaysCount: payload.pastDaysCount,
+      maximumNumberOfDays: payload.maximumNumberOfDays,
+      identifier: payload.id
+    };
+    const existing = this.fetchers.get(key);
+
+    if (existing && existing.active) {
+      // Already polling: keep the one loop, pick up any new settings, and hand
+      // the latest events to whoever asked (e.g. a freshly connected client).
+      existing.params = params;
+      if (existing.events) {
+        this.broadcastEvents(existing.events, params.identifier, params.calendarID);
+      }
+      return;
+    }
+
+    this.fetchers.set(key, { params, active: true, timer: null, events: null });
+    this.fetchCalendar(key);
   },
 
   authenticateWithQueryParams: function (params) {
@@ -310,24 +339,27 @@ module.exports = NodeHelper.create({
   },
 
   /**
-   * Fetch calendars
+   * Fetch a calendar and schedule the next fetch for it.
    *
-   * @param {string} calendarID The ID of the calendar
-   * @param {number} fetchInterval How often does the calendar needs to be fetched in ms
-   * @param {number} maximumEntries The maximum number of events fetched.
-   * @param {number} pastDaysCount Number of past days to fetch events from.
-   * @param {number} maximumNumberOfDays Number of future days to fetch events into.
-   * @param {string} identifier ID of the module
+   * @param {string} key The fetcher key from fetcherKey()
    */
-  fetchCalendar: function (
-    calendarID,
-    fetchInterval,
-    maximumEntries,
-    pastDaysCount,
-    maximumNumberOfDays = 365,
-    identifier
-  ) {
-    if (!this.calendarService) return;
+  fetchCalendar: function (key) {
+    const fetcher = this.fetchers.get(key);
+    if (!fetcher) return;
+
+    if (!this.calendarService) {
+      // The loop ends here; the next ADD_CALENDAR after re-auth restarts it.
+      fetcher.active = false;
+      return;
+    }
+
+    const {
+      calendarID,
+      maximumEntries,
+      pastDaysCount,
+      maximumNumberOfDays = 365,
+      identifier
+    } = fetcher.params;
 
     this.calendarService.events.list(
       {
@@ -361,6 +393,7 @@ module.exports = NodeHelper.create({
             err?.message?.toLowerCase().includes("invalid_grant")
           ) {
             Log.warn(`${this.name}: Token invalid or revoked, clearing token and requesting re-auth`);
+            fetcher.active = false;
             this.calendarService = null;
             fs.unlink(path.join(this.path, TOKEN_FILE_NAME), () => {});
             this.authenticate();
@@ -378,43 +411,28 @@ module.exports = NodeHelper.create({
           Log.info(
             `${this.name}: ${events.length} events loaded for ${calendarID}`
           );
+          fetcher.events = events;
           this.broadcastEvents(events, identifier, calendarID);
         }
 
-        this.scheduleNextCalendarFetch(
-          calendarID,
-          fetchInterval,
-          maximumEntries,
-          pastDaysCount,
-          maximumNumberOfDays,
-          identifier
-        );
+        this.scheduleNextCalendarFetch(key);
       }
     );
   },
 
-  scheduleNextCalendarFetch: function (
-    calendarID,
-    fetchInterval,
-    maximumEntries,
-    pastDaysCount,
-    maximumNumberOfDays,
-    identifier
-  ) {
-    if (this.isHelperActive) {
-      setTimeout(() => {
-        // Arrow function for setTimeout callback
-        this.fetchCalendar(
-          // `this` inside arrow function correctly refers to helper instance
-          calendarID,
-          fetchInterval,
-          maximumEntries,
-          pastDaysCount,
-          maximumNumberOfDays,
-          identifier
-        );
-      }, fetchInterval);
+  scheduleNextCalendarFetch: function (key) {
+    const fetcher = this.fetchers.get(key);
+    if (!fetcher) return;
+
+    if (!this.isHelperActive) {
+      fetcher.active = false;
+      return;
     }
+
+    clearTimeout(fetcher.timer);
+    fetcher.timer = setTimeout(() => {
+      this.fetchCalendar(key);
+    }, fetcher.params.fetchInterval);
   },
 
   broadcastEvents: function (events, identifier, calendarID) {
